@@ -1,0 +1,506 @@
+/* ───────── Map Pro: an immersive, map-only page with floating glass panels ───────── */
+
+.main--map {
+  max-width: none;
+  padding: 0;
+}
+
+.map-page {
+  --glass: color-mix(in srgb, var(--surface) 80%, transparent);
+  position: relative;
+  height: clamp(560px, calc(100dvh - 200px), 780px);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.map-page.is-full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  height: 100dvh;
+}
+
+.map-page .leaflet-container {
+  font-family: var(--font-ui);
+  background: var(--surface-2);
+}
+
+/* Base map treatment: the standard OSM tiles are toned down so data carries the map. */
+.map-base--standard .base-tiles {
+  filter: grayscale(0.8) contrast(0.92) brightness(1.04) saturate(0.9);
+}
+
+.map-base--standard.map-shell--dark .base-tiles {
+  filter: invert(1) hue-rotate(180deg) grayscale(0.9) brightness(0.78) contrast(0.95);
+}
+
+.map-shell--dark.map-page .leaflet-container {
+  background: #10171d;
+}
+
+.map-base--satellite.map-shell--dark .base-tiles {
+  filter: brightness(0.8);
+}
+
+.windflow {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  pointer-events: none;
+}
+
+/* ── Floating panels ── */
+
+.mp {
+  position: absolute;
+  z-index: 500;
+  display: grid;
+  gap: 10px;
+}
+
+.mp--left {
+  top: 16px;
+  left: 16px;
+  width: min(300px, calc(100% - 88px));
+  max-height: calc(100% - 32px);
+  align-content: start;
+}
+
+.mp--tools {
+  top: 16px;
+  right: 16px;
+}
+
+.mp__card,
+.mp__legend {
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  box-shadow: 0 20px 40px -24px rgba(8, 18, 30, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mp__search {
+  padding: 6px;
+}
+
+.mp__search .search {
+  margin: 0;
+}
+
+.mp__layers {
+  display: grid;
+  padding: 6px;
+  gap: 2px;
+}
+
+.mp__layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mp__layer i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line-strong);
+}
+
+.mp__layer:hover {
+  background: var(--surface-2);
+}
+
+.mp__layer.is-active {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.mp__stats {
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.mp__stats-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.mp__stats-head strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.mp__stats dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.mp__stats dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--t-sm);
+}
+
+.mp__stats dt {
+  color: var(--ink-3);
+}
+
+.mp__stats dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mp__stats dd button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: right;
+}
+
+.mp__stats dd button:hover {
+  text-decoration: underline;
+}
+
+.mp__stats dd b {
+  margin-left: 4px;
+  color: var(--accent);
+  filter: brightness(0.85);
+}
+
+.mp__tool {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.5);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 14px 28px -18px rgba(8, 18, 30, 0.6);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.mp__tool:hover,
+.mp__tool[aria-expanded="true"] {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.mp__options {
+  position: absolute;
+  z-index: 500;
+  top: 16px;
+  right: 70px;
+  width: 260px;
+  padding: 16px 18px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.mp__opt-title {
+  margin: 8px 0 0;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.mp__opt-title:first-child {
+  margin-top: 0;
+}
+
+.mp__chips {
+  display: flex;
+  gap: 6px;
+}
+
+.mp__chip {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mp__chip.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.mp__switch,
+.mp__range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.mp__range input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp__warn {
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--bad);
+}
+
+.mp__legend {
+  position: absolute;
+  z-index: 500;
+  left: 16px;
+  bottom: 28px;
+  width: 280px;
+  padding: 12px 16px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.mp__legend-title {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.mp__legend-bar {
+  height: 8px;
+  border-radius: 99px;
+}
+
+.mp__legend-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp__toast {
+  position: absolute;
+  z-index: 600;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 99px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--t-sm);
+  font-weight: 500;
+}
+
+/* ── Markers ── */
+
+.wxpin {
+  pointer-events: none;
+}
+
+.wxpin span {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.45);
+}
+
+.wxpin i {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 9px solid currentColor;
+}
+
+.wxpin--city {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.wxpin--city span {
+  padding: 0;
+  gap: 0;
+  border: 0;
+  background: none !important;
+  box-shadow: none;
+  transform: translate(-14px, -50%);
+}
+
+.wxpin--city b {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 3px 10px -3px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+}
+
+.wxpin--city em {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0a1520;
+  text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 8px #fff;
+}
+
+.map-shell--dark .wxpin--city em,
+.map-base--satellite .wxpin--city em {
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.wxpin--saved span {
+  background: var(--ink) !important;
+  color: #fff !important;
+}
+
+/* ── Popup and Leaflet chrome ── */
+
+.map-popup {
+  display: grid;
+  gap: 2px;
+  min-width: 170px;
+  font-family: var(--font-ui);
+}
+
+.map-popup__temp {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.map-page .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  padding: 2px;
+  box-shadow: 0 20px 40px -20px rgba(8, 18, 30, 0.6);
+}
+
+.map-page .leaflet-bar {
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 14px 28px -18px rgba(8, 18, 30, 0.6);
+}
+
+.map-page .leaflet-bar a {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  color: var(--ink);
+  background: var(--glass);
+  backdrop-filter: blur(18px);
+  border-bottom-color: var(--line);
+}
+
+.map-page .leaflet-control-attribution {
+  background: var(--glass);
+  color: var(--ink-3);
+  font-size: 11px;
+  border-radius: 8px 0 0 0;
+}
+
+@media (max-width: 760px) {
+  .map-page {
+    height: calc(100dvh - 124px - var(--tabbar-h));
+    min-height: 420px;
+  }
+
+  .mp__layers {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .mp__layer {
+    flex: none;
+    padding: 8px 12px;
+  }
+
+  .map-page.is-full {
+    height: 100dvh;
+  }
+
+  .mp--left {
+    width: calc(100% - 76px);
+  }
+
+  .mp__stats {
+    display: none;
+  }
+
+  .mp__legend {
+    width: 220px;
+    bottom: 36px;
+  }
+
+  .mp__options {
+    right: 16px;
+    top: 66px;
+  }
+}
+
+/* Stacking: the whole Leaflet map sits below the panels, and the search card sits above its siblings
+   so the suggestion list is never covered by the layer or stats cards. */
+.map-page .leaflet-container {
+  z-index: 0;
+}
+
+.mp__search {
+  position: relative;
+  z-index: 30;
+}
+
+.mp__search .search__panel {
+  z-index: 40;
+  background: var(--surface);
+  max-height: min(58vh, 440px);
+  box-shadow: 0 28px 56px -20px rgba(8, 18, 30, 0.55);
+}
+
+.mp--left > .mp__layers,
+.mp--left > .mp__stats {
+  position: relative;
+  z-index: 1;
+}

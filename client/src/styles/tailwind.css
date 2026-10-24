@@ -1,0 +1,64 @@
+/*
+ * Tailwind CSS v4, wired to the existing design tokens (tokens.css).
+ *
+ * - No Preflight: base.css already resets the page, and the scene/map/chart CSS relies on it.
+ * - `@theme inline` maps utilities onto the live CSS variables, so `bg-surface`, `text-ink-2`,
+ *   `border-line` follow the light/dark `[data-theme]` automatically.
+ * - Newer UI (Planner, intelligence cards, map controls) is written with utilities and the
+ *   @apply component layer below. Scenes, keyframes, Leaflet and Recharts stay as hand-written CSS.
+ */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-raised: var(--bg-raised);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-info: var(--info);
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --radius-m: var(--radius-m);
+  --radius-l: var(--radius-l);
+}
+
+@layer components {
+  .notice {
+    @apply m-0 rounded-m border border-line-strong bg-accent-soft px-3.5 py-3 text-sm;
+  }
+
+  .pill {
+    @apply rounded-full border border-line-strong px-2 py-0.5 text-[11px] font-semibold tracking-wide;
+  }
+
+  .pill--excellent,
+  .pill--good {
+    @apply bg-accent-soft;
+  }
+
+  .pill--poor {
+    @apply opacity-70;
+  }
+
+  .card__subtitle {
+    @apply mt-6 mb-0 text-sm font-semibold text-ink-2;
+  }
+}
+
+/* The map's layer switcher scrolls sideways on narrow screens instead of widening the page. */
+.page-head .segmented {
+  @apply max-w-full overflow-x-auto;
+}

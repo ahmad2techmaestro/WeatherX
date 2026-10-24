@@ -1,0 +1,47 @@
+{
+    "name": "weatherx-platform",
+    "version": "1.0.0",
+    "description": "WeatherX — weather, air quality, maps and forecasts for India (MERN)",
+    "main": "server/server.js",
+    "scripts": {
+        "setup": "npm install && cd client && npm install",
+        "start": "node server/server.js",
+        "server": "nodemon server/server.js",
+        "client": "cd client && npm run dev",
+        "dev": "concurrently --kill-others-on-fail \"npm run server\" \"npm run client\"",
+        "heroku-postbuild": "npm --prefix client run build",
+        "test": "node server/tests/run.js",
+        "vapid": "web-push generate-vapid-keys",
+        "mock": "node server/tests/mockUpstream.js 4010",
+        "build": "npm --prefix client run build"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "axios": "^1.20.0",
+        "bcryptjs": "^3.0.3",
+        "compression": "^1.8.2",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "dotenv": "^8.2.0",
+        "express": "^4.17.1",
+        "express-rate-limit": "^8.7.0",
+        "jsonwebtoken": "^9.0.3",
+        "mongoose": "^9.10.1",
+        "node-cron": "^4.6.0",
+        "nodemailer": "^10.0.10",
+        "suncalc": "^1.9.0",
+        "swagger-jsdoc": "^6.3.0",
+        "swagger-ui-express": "^5.0.1",
+        "twilio": "^6.1.1",
+        "web-push": "^3.6.7"
+    },
+    "devDependencies": {
+        "concurrently": "^5.3.0",
+        "nodemon": "^2.0.4"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}

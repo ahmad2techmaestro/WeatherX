@@ -1,0 +1,23 @@
+/** Major Indian cities shown as live hotspots on the map. */
+export const CITIES = [
+  { name: "Delhi", latitude: 28.6139, longitude: 77.209 },
+  { name: "Mumbai", latitude: 19.076, longitude: 72.8777 },
+  { name: "Kolkata", latitude: 22.5726, longitude: 88.3639 },
+  { name: "Chennai", latitude: 13.0827, longitude: 80.2707 },
+  { name: "Bengaluru", latitude: 12.9716, longitude: 77.5946 },
+  { name: "Hyderabad", latitude: 17.385, longitude: 78.4867 },
+  { name: "Ahmedabad", latitude: 23.0225, longitude: 72.5714 },
+  { name: "Pune", latitude: 18.5204, longitude: 73.8567 },
+  { name: "Jaipur", latitude: 26.9124, longitude: 75.7873 },
+  { name: "Lucknow", latitude: 26.8467, longitude: 80.9462 },
+  { name: "Patna", latitude: 25.5941, longitude: 85.1376 },
+  { name: "Gorakhpur", latitude: 26.7606, longitude: 83.3732 },
+  { name: "Bhopal", latitude: 23.2599, longitude: 77.4126 },
+  { name: "Chandigarh", latitude: 30.7333, longitude: 76.7794 },
+  { name: "Guwahati", latitude: 26.1445, longitude: 91.7362 },
+  { name: "Kochi", latitude: 9.9312, longitude: 76.2673 },
+  { name: "Srinagar", latitude: 34.0837, longitude: 74.7973 },
+  { name: "Varanasi", latitude: 25.3176, longitude: 82.9739 },
+  { name: "Nagpur", latitude: 21.1458, longitude: 79.0882 },
+  { name: "Bhubaneswar", latitude: 20.2961, longitude: 85.8245 },
+];

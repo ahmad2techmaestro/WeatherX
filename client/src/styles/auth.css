@@ -1,0 +1,71 @@
+/* Sign in / Sign up — split-screen frame */
+.auth { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--bg); color: var(--ink); }
+.auth__brand { position: relative; overflow: hidden; background: #08121a; color: #eef3f5; isolation: isolate; }
+.auth__art { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.auth__brand-inner { position: relative; display: flex; flex-direction: column; gap: 2.5rem; min-height: 100%; padding: clamp(2rem, 4vw, 3.5rem); }
+.auth__brand .logo, .auth__brand .logo * { color: #fff; }
+.auth__pitch { margin-top: auto; max-width: 30rem; }
+.auth__pitch h2 { font-family: var(--font-display); font-weight: 600; font-size: clamp(2.2rem, 3.6vw, 3.4rem); line-height: 1.04; letter-spacing: -0.015em; margin: 0 0 1rem; font-synthesis: none; }
+.auth__pitch p { margin: 0; color: rgba(238, 243, 245, 0.74); font-size: 1.02rem; line-height: 1.55; }
+.auth__points { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; max-width: 30rem; }
+.auth__points li { display: flex; gap: 0.9rem; align-items: flex-start; padding: 0.9rem 1rem; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+.auth__points strong { display: block; font-weight: 600; font-size: 0.95rem; }
+.auth__points p { margin: 0.15rem 0 0; font-size: 0.86rem; line-height: 1.45; color: rgba(238, 243, 245, 0.68); }
+.auth__point-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: rgba(255, 184, 28, 0.16); color: #ffb81c; }
+.auth__credit { margin: 0; font-size: 0.78rem; color: rgba(238, 243, 245, 0.5); }
+
+.auth__panel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: clamp(1.5rem, 4vw, 3rem) var(--gutter, 1.25rem); }
+.auth__mobile-logo { display: none; margin-bottom: 2rem; align-self: flex-start; }
+
+.aform { width: 100%; max-width: 25rem; display: grid; gap: 1.1rem; }
+.aform__head h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(2.1rem, 4vw, 2.7rem); line-height: 1.05; letter-spacing: -0.015em; margin: 0 0 0.5rem; font-synthesis: none; }
+.aform__head p { margin: 0; color: var(--ink-2); line-height: 1.5; }
+.aform__note { margin: 0; padding: 0.7rem 0.9rem; border-radius: 10px; font-size: 0.9rem; line-height: 1.4; background: var(--info-soft); color: var(--ink); border: 1px solid var(--line); }
+.aform__note--good { background: var(--good-soft); }
+.aform__note--error { background: var(--bad-soft); color: var(--bad); }
+
+.afield { display: grid; gap: 0.4rem; }
+.afield label { font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+.afield__control { position: relative; }
+.afield__control input { width: 100%; height: 3rem; padding: 0 1rem; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: 1rem; transition: border-color 0.15s, box-shadow 0.15s; }
+.afield__control input::placeholder { color: var(--ink-3); }
+.afield__control input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.afield__control input[type="password"], .afield__control:has(.afield__toggle) input { padding-right: 3rem; }
+.afield__toggle { position: absolute; top: 0; right: 0; height: 3rem; width: 3rem; display: grid; place-items: center; background: none; border: 0; color: var(--ink-3); cursor: pointer; border-radius: 0 12px 12px 0; }
+.afield__toggle:hover { color: var(--ink); }
+.afield__toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.strength { display: grid; gap: 0.5rem; margin-top: 0.2rem; }
+.strength__bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.strength__bar i { height: 4px; border-radius: 4px; background: var(--surface-3); transition: background 0.2s; }
+.strength__bar[data-level="1"] i:nth-child(-n+1) { background: var(--bad); }
+.strength__bar[data-level="2"] i:nth-child(-n+2) { background: var(--accent); }
+.strength__bar[data-level="3"] i { background: var(--good); }
+.strength ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.2rem; font-size: 0.8rem; color: var(--ink-3); }
+.strength li { display: flex; align-items: center; gap: 0.4rem; }
+.strength li svg { opacity: 0.35; }
+.strength li.is-met { color: var(--good); }
+.strength li.is-met svg { opacity: 1; }
+
+.aform__submit { display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; height: 3.1rem; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s, filter 0.15s, box-shadow 0.15s; box-shadow: 0 10px 24px -14px var(--accent); }
+.aform__submit:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+.aform__submit:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.aform__submit:disabled { opacity: 0.7; cursor: progress; }
+.aform__switch { margin: 0.4rem 0 0; text-align: center; color: var(--ink-2); font-size: 0.92rem; }
+.aform__switch a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--accent); }
+
+.splash { min-height: 100vh; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 1.5rem; background: var(--bg); }
+.splash__bar { width: 120px; height: 3px; border-radius: 3px; background: var(--surface-3); position: relative; overflow: hidden; }
+.splash__bar::after { content: ""; position: absolute; inset: 0 auto 0 -40%; width: 40%; background: var(--accent); border-radius: 3px; animation: splash 1.1s ease-in-out infinite; }
+@keyframes splash { to { left: 100%; } }
+
+@media (max-width: 900px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth__brand { display: none; }
+  .auth__panel { justify-content: flex-start; padding-top: 2rem; }
+  .auth__mobile-logo { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash__bar::after { animation: none; left: 30%; }
+  .aform__submit, .afield__control input { transition: none; }
+}

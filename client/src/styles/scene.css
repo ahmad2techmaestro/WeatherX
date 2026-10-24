@@ -1,0 +1,320 @@
+/* ───────── Weather scene ───────── */
+
+.wx-scene {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-low) 100%);
+  transition: background 0.8s var(--ease);
+}
+
+.wx-scene__sky,
+.wx-scene__scrim,
+.wx-land {
+  position: absolute;
+  inset: 0;
+}
+
+.wx-scene__sky {
+  overflow: hidden;
+}
+
+.wx-scene__scrim {
+  background:
+    linear-gradient(90deg, rgba(5, 10, 20, 0.5) 0%, rgba(5, 10, 20, 0.12) 55%, rgba(5, 10, 20, 0) 80%),
+    linear-gradient(0deg, rgba(5, 10, 20, 0.55) 0%, rgba(5, 10, 20, 0) 55%);
+  pointer-events: none;
+}
+
+.wx-scene--snow .wx-scene__scrim,
+.wx-scene--fog .wx-scene__scrim {
+  background:
+    linear-gradient(90deg, rgba(10, 18, 30, 0.58) 0%, rgba(10, 18, 30, 0.2) 55%, rgba(10, 18, 30, 0.04) 80%),
+    linear-gradient(0deg, rgba(10, 18, 30, 0.6) 0%, rgba(10, 18, 30, 0) 55%);
+}
+
+.wx-scene__content {
+  position: relative;
+  z-index: 2;
+}
+
+.wx-land {
+  top: auto;
+  height: 46%;
+  width: 100%;
+  pointer-events: none;
+}
+
+.wx-scene--compact .wx-scene__scrim {
+  background: linear-gradient(0deg, rgba(5, 10, 20, 0.5) 0%, rgba(5, 10, 20, 0.05) 70%);
+}
+
+/* sun */
+.wx-sun {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transition: left 1s var(--ease), top 1s var(--ease);
+}
+
+.wx-sun__disc,
+.wx-sun__glow {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.wx-sun__disc {
+  width: 58px;
+  height: 58px;
+  background: radial-gradient(circle at 38% 36%, #fffbe6, #ffd66b 55%, #ffae2b);
+  box-shadow: 0 0 28px 8px rgba(255, 196, 80, 0.55);
+}
+
+.wx-sun__glow {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(255, 220, 140, 0.38), rgba(255, 190, 90, 0.12) 38%, transparent 68%);
+}
+
+.wx-scene--dawn .wx-sun__disc,
+.wx-scene--dusk .wx-sun__disc {
+  background: radial-gradient(circle at 38% 36%, #fff1d0, #ffb067 55%, #ff7e45);
+  box-shadow: 0 0 34px 10px rgba(255, 140, 80, 0.5);
+}
+
+/* moon & stars */
+.wx-moon {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.wx-moon svg {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  overflow: visible;
+}
+
+.wx-stars {
+  position: absolute;
+  inset: 0 0 35% 0;
+  transition: opacity 1s;
+}
+
+.wx-stars i {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle 4.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(0.55);
+    filter: brightness(0.6);
+  }
+}
+
+/* clouds */
+.wx-clouds {
+  position: absolute;
+  inset: 0;
+}
+
+.wx-cloud {
+  position: absolute;
+  left: 0;
+  height: auto;
+  animation: cloud-drift linear infinite;
+  filter: blur(0.4px);
+}
+
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-30vw);
+  }
+
+  to {
+    transform: translateX(130vw);
+  }
+}
+
+/* precipitation & fog & lightning */
+.wx-precip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wx-fog i {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 34%;
+  background: radial-gradient(ellipse at center, rgba(235, 240, 245, 0.55), rgba(235, 240, 245, 0) 68%);
+  filter: blur(14px);
+  animation: fog-slide 36s ease-in-out infinite alternate;
+}
+
+.wx-fog i:nth-child(1) {
+  top: 34%;
+}
+
+.wx-fog i:nth-child(2) {
+  top: 52%;
+  animation-duration: 48s;
+  animation-direction: alternate-reverse;
+}
+
+.wx-fog i:nth-child(3) {
+  top: 14%;
+  opacity: 0.7;
+  animation-duration: 60s;
+}
+
+@keyframes fog-slide {
+  from {
+    transform: translateX(-6%);
+  }
+
+  to {
+    transform: translateX(6%);
+  }
+}
+
+.wx-flash-layer {
+  position: absolute;
+  inset: 0;
+  background: #dfe8ff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wx-flash-layer.is-on {
+  animation: sky-flash 0.55s ease-out;
+}
+
+@keyframes sky-flash {
+  0% {
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 0.55;
+  }
+
+  18% {
+    opacity: 0.05;
+  }
+
+  28% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.wx-bolt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 6px #cfe0ff);
+}
+
+/* icon animation */
+.wx-icon {
+  flex: none;
+  overflow: visible;
+}
+
+.wx-spin {
+  animation: wx-spin 24s linear infinite;
+}
+
+.wx-fall {
+  animation: wx-fall 1.1s linear infinite;
+}
+
+.wx-fall-soft {
+  animation: wx-fall-soft 2.4s ease-in-out infinite;
+}
+
+.wx-drift {
+  animation: wx-drift 5s ease-in-out infinite alternate;
+}
+
+.wx-flash {
+  animation: wx-bolt 2.2s steps(1) infinite;
+}
+
+@keyframes wx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wx-fall {
+  0% {
+    transform: translateY(-2px);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(5px);
+    opacity: 0;
+  }
+}
+
+@keyframes wx-fall-soft {
+  0%,
+  100% {
+    transform: translate(0, -2px);
+  }
+
+  50% {
+    transform: translate(2px, 3px);
+  }
+}
+
+@keyframes wx-drift {
+  from {
+    transform: translateX(-1.5px);
+  }
+
+  to {
+    transform: translateX(1.5px);
+  }
+}
+
+@keyframes wx-bolt {
+  0%,
+  60% {
+    opacity: 1;
+  }
+
+  64%,
+  70% {
+    opacity: 0.25;
+  }
+
+  74%,
+  100% {
+    opacity: 1;
+  }
+}
