@@ -290,3 +290,39 @@ test("signed-out requests are refused on every data route", async () => {
     const bad = await fetch(`${base}/weather/overview?lat=26.7&lon=83.3`, { headers: { Authorization: "Bearer not-a-token" } });
     assert.equal(bad.status, 401);
 });
+
+test("overview failure hands the browser fallback URLs, and the relay builds the same overview from them", async () => {
+    process.env.MOCK_FAIL = "/v1/forecast";
+
+    const failed = await get("/weather/overview?lat=11.11&lon=22.22");
+
+    delete process.env.MOCK_FAIL;
+
+    assert.equal(failed.status, 502);
+    assert.equal(failed.body.success, false);
+    assert.match(failed.body.fallback.forecast, /\/v1\/forecast\?latitude=11\.11&longitude=22\.22/);
+    assert.match(failed.body.fallback.air, /\/v1\/air-quality\?latitude=11\.11&longitude=22\.22/);
+
+    // What the browser does: fetch both URLs itself, then post the raw JSON back.
+    const [forecast, air] = await Promise.all([fetch(failed.body.fallback.forecast).then((r) => r.json()), fetch(failed.body.fallback.air).then((r) => r.json())]);
+    const res = await fetch(`${base}/weather/overview/relay`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ forecast, air }) });
+    const body = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(body.data.daily.length, 14);
+    assert.ok(body.data.airQuality);
+    assert.ok(JSON.stringify({ forecast, air }).length < 100 * 1024, "relay payload fits the 100kb body limit");
+
+    const noAir = await fetch(`${base}/weather/overview/relay`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ forecast, air: { junk: true } }) });
+
+    assert.equal(noAir.status, 200, "a bad air payload only drops air quality");
+    assert.equal((await noAir.json()).data.airQuality, null);
+});
+
+test("relay rejects missing or unreadable weather data", async () => {
+    for (const payload of [{}, { forecast: "x" }, { forecast: [] }, { forecast: { current: {} } }]) {
+        const res = await fetch(`${base}/weather/overview/relay`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(payload) });
+
+        assert.equal(res.status, 400, JSON.stringify(payload));
+    }
+});

@@ -1,4 +1,4 @@
-const { getJson } = require("../lib/httpClient");
+const { getJson, client } = require("../lib/httpClient");
 
 // Base URLs are overridable so tests and local development can point at a mock upstream.
 const FORECAST_URL =
@@ -72,38 +72,6 @@ const AQ_CURRENT_VARS = [
 
 const AQ_HOURLY_VARS = ["pm10", "pm2_5", "us_aqi"];
 
-/** 14-day forecast with current conditions and hourly data. Times are unix seconds. */
-const fetchForecast = (latitude, longitude) =>
-    getJson(FORECAST_URL, {
-        params: {
-            latitude,
-            longitude,
-            timezone: "auto",
-            timeformat: "unixtime",
-            forecast_days: 14,
-            wind_speed_unit: "kmh",
-            temperature_unit: "celsius",
-            precipitation_unit: "mm",
-            current: CURRENT_VARS.join(","),
-            hourly: HOURLY_VARS.join(","),
-            daily: DAILY_VARS.join(","),
-        },
-    });
-
-/** Current air quality plus the next three days, hourly. */
-const fetchAirQuality = (latitude, longitude) =>
-    getJson(AIR_QUALITY_URL, {
-        params: {
-            latitude,
-            longitude,
-            timezone: "auto",
-            timeformat: "unixtime",
-            forecast_days: 3,
-            current: AQ_CURRENT_VARS.join(","),
-            hourly: AQ_HOURLY_VARS.join(","),
-        },
-    });
-
 const forecastParams = () => ({
     timezone: "auto",
     timeformat: "unixtime",
@@ -114,6 +82,30 @@ const forecastParams = () => ({
     current: CURRENT_VARS.join(","),
     hourly: HOURLY_VARS.join(","),
     daily: DAILY_VARS.join(","),
+});
+
+const airQualityParams = () => ({
+    timezone: "auto",
+    timeformat: "unixtime",
+    forecast_days: 3,
+    current: AQ_CURRENT_VARS.join(","),
+    hourly: AQ_HOURLY_VARS.join(","),
+});
+
+/** 14-day forecast with current conditions and hourly data. Times are unix seconds. */
+const fetchForecast = (latitude, longitude) => getJson(FORECAST_URL, { params: { latitude, longitude, ...forecastParams() } });
+
+/** Current air quality plus the next three days, hourly. */
+const fetchAirQuality = (latitude, longitude) => getJson(AIR_QUALITY_URL, { params: { latitude, longitude, ...airQualityParams() } });
+
+/**
+ * The exact upstream URLs the server would call. When Open-Meteo rate-limits the server's
+ * shared IP, the browser can request these itself (from the visitor's own IP) and hand the raw
+ * JSON back through POST /weather/overview/relay.
+ */
+const browserFallbackUrls = (latitude, longitude) => ({
+    forecast: client.getUri({ url: FORECAST_URL, params: { latitude, longitude, ...forecastParams() } }),
+    air: client.getUri({ url: AIR_QUALITY_URL, params: { latitude, longitude, ...airQualityParams() } }),
 });
 
 const asList = (data) => (Array.isArray(data) ? data : [data]);
@@ -129,15 +121,7 @@ const fetchForecastMany = async (points) =>
 const fetchAirQualityMany = async (points) =>
     asList(
         await getJson(AIR_QUALITY_URL, {
-            params: {
-                latitude: points.map((p) => p.latitude).join(","),
-                longitude: points.map((p) => p.longitude).join(","),
-                timezone: "auto",
-                timeformat: "unixtime",
-                forecast_days: 3,
-                current: AQ_CURRENT_VARS.join(","),
-                hourly: AQ_HOURLY_VARS.join(","),
-            },
+            params: { latitude: points.map((p) => p.latitude).join(","), longitude: points.map((p) => p.longitude).join(","), ...airQualityParams() },
         })
     );
 
@@ -159,4 +143,4 @@ const fetchCurrentMany = async (points) => {
     return Array.isArray(data) ? data : [data];
 };
 
-module.exports = { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany };
+module.exports = { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany, browserFallbackUrls };

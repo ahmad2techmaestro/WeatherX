@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const { getOverview, getSummary, prefetchMany, getGrid, recordSnapshot } = require("../services/forecastService");
+const { browserFallbackUrls } = require("../providers/openMeteo");
+const { buildOverview } = require("../services/overviewModel");
 const { optionalAuthenticate } = require("../middleware/optionalAuth");
 const { parseCoordinates, cleanText } = require("../lib/validate");
 
@@ -13,13 +15,13 @@ const MAX_COMPARE_POINTS = 5;
 // Current conditions, 7 days of hourly data, 14 days of daily data, air quality,
 // astronomy, insights and forecast-based advisories — one request per location.
 router.get("/overview", optionalAuthenticate, async (req, res, next) => {
+    const point = parseCoordinates(req.query.lat, req.query.lon);
+
+    if (!point) {
+        return res.status(400).json({ success: false, message: "Valid latitude and longitude are required." });
+    }
+
     try {
-        const point = parseCoordinates(req.query.lat, req.query.lon);
-
-        if (!point) {
-            return res.status(400).json({ success: false, message: "Valid latitude and longitude are required." });
-        }
-
         const overview = await getOverview(point.latitude, point.longitude);
 
         // History powers the Analytics page, so it is only recorded for signed-in users
@@ -33,6 +35,50 @@ router.get("/overview", optionalAuthenticate, async (req, res, next) => {
         }
 
         res.set("Cache-Control", "private, max-age=60");
+
+        return res.status(200).json({ success: true, data: overview });
+    } catch (error) {
+        // Upstream trouble (rate limit, outage, timeout): say why in one log line, and hand the browser the
+        // upstream URLs so it can fetch the data from the visitor's own IP and relay it back (see below).
+        if ((error.status === 502 || error.status === 504) && error.cause?.isAxiosError) {
+            const reason = error.cause.response?.data?.reason;
+
+            console.warn(`[weather] upstream failed: ${error.cause.response?.status || error.cause.code}${reason ? ` - ${reason}` : ""}`);
+
+            return res.status(error.status).json({ success: false, message: error.message, fallback: browserFallbackUrls(point.latitude, point.longitude) });
+        }
+
+        return next(error);
+    }
+});
+
+// POST /api/weather/overview/relay   { forecast, air }
+// Builds the same overview from raw Open-Meteo JSON that the visitor's browser fetched itself. Used only as a
+// fallback when the server's own requests are being rate-limited. The data is never cached or stored, and it is
+// only ever returned to the sender, so a forged payload can't affect anyone else.
+router.post("/overview/relay", async (req, res, next) => {
+    try {
+        const { forecast, air } = req.body || {};
+
+        if (!forecast || typeof forecast !== "object" || Array.isArray(forecast)) {
+            return res.status(400).json({ success: false, message: "Weather data is required." });
+        }
+
+        const build = (airPayload) => buildOverview({ forecast, air: airPayload });
+        let overview;
+
+        try {
+            try {
+                overview = build(air && typeof air === "object" && !Array.isArray(air) ? air : null);
+            } catch (error) {
+                // Air quality is optional; a bad air payload must not sink the whole overview.
+                overview = build(null);
+            }
+        } catch (error) {
+            return res.status(400).json({ success: false, message: "That weather data could not be read." });
+        }
+
+        res.set("Cache-Control", "no-store");
 
         return res.status(200).json({ success: true, data: overview });
     } catch (error) {
