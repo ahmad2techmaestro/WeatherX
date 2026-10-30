@@ -156,7 +156,8 @@ app.use((req, res, next) => {
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://tile.opentopomap.org https://*.tile.opentopomap.org",
                 "font-src 'self' data:",
-                "connect-src 'self'",
+                // Open-Meteo is allowed so the browser can fetch weather itself when the server's IP is rate-limited.
+                "connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com",
                 "frame-ancestors 'none'",
                 "base-uri 'self'",
                 "object-src 'none'",
