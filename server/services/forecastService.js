@@ -3,9 +3,13 @@ const { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fet
 const { buildOverview } = require("./overviewModel");
 const { saveHistoricalWeather } = require("./historicalWeatherService");
 
-const forecastCache = new TTLCache({ ttlMs: 10 * 60 * 1000, max: 400 });
-const gridCache = new TTLCache({ ttlMs: 10 * 60 * 1000, max: 200 });
-const airCache = new TTLCache({ ttlMs: 30 * 60 * 1000, max: 400 });
+// `staleMs`: if Open-Meteo rate-limits or fails, keep serving the last good response for this long
+// instead of showing an error. Responses carry their own observation time, so the UI never claims
+// stale data is fresh.
+const HOUR_MS = 60 * 60 * 1000;
+const forecastCache = new TTLCache({ ttlMs: 10 * 60 * 1000, max: 400, staleMs: 3 * HOUR_MS });
+const gridCache = new TTLCache({ ttlMs: 10 * 60 * 1000, max: 200, staleMs: HOUR_MS });
+const airCache = new TTLCache({ ttlMs: 30 * 60 * 1000, max: 400, staleMs: 3 * HOUR_MS });
 
 // Snap to ~100 m: precise enough for a live location, still lets repeat requests share a cache entry.
 const snap = (value) => Number(Number(value).toFixed(3));
