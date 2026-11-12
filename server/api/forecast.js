@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 const { getOverview, getSummary, prefetchMany, getGrid, recordSnapshot } = require("../services/forecastService");
 const { browserFallbackUrls } = require("../providers/openMeteo");
+const relayCache = require("../services/relayCache");
 const { buildOverview } = require("../services/overviewModel");
 const { optionalAuthenticate } = require("../middleware/optionalAuth");
 const { parseCoordinates, cleanText } = require("../lib/validate");
@@ -54,11 +55,11 @@ router.get("/overview", optionalAuthenticate, async (req, res, next) => {
 
 // POST /api/weather/overview/relay   { forecast, air }
 // Builds the same overview from raw Open-Meteo JSON that the visitor's browser fetched itself. Used only as a
-// fallback when the server's own requests are being rate-limited. The data is never cached or stored, and it is
-// only ever returned to the sender, so a forged payload can't affect anyone else.
-router.post("/overview/relay", async (req, res, next) => {
+// fallback when the server's own requests are being rate-limited. It is never shared: for a signed-in user it is
+// kept in a per-user cache (see relayCache) and only ever returned to that user, so a forged payload can't affect anyone else.
+router.post("/overview/relay", optionalAuthenticate, async (req, res, next) => {
     try {
-        const { forecast, air } = req.body || {};
+        const { forecast, air, lat, lon } = req.body || {};
 
         if (!forecast || typeof forecast !== "object" || Array.isArray(forecast)) {
             return res.status(400).json({ success: false, message: "Weather data is required." });
@@ -77,6 +78,11 @@ router.post("/overview/relay", async (req, res, next) => {
         } catch (error) {
             return res.status(400).json({ success: false, message: "That weather data could not be read." });
         }
+
+        // Signed-in users: remember it for that user only, so the AI features can work while the server is rate-limited.
+        const point = parseCoordinates(lat, lon);
+
+        if (req.user && point) relayCache.put(req.user.id, point.latitude, point.longitude, { forecast, air: air && typeof air === "object" && !Array.isArray(air) ? air : null });
 
         res.set("Cache-Control", "no-store");
 

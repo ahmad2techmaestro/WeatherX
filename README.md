@@ -252,3 +252,9 @@ Secrets live only in `server/.env`, which is git-ignored. Rotate any credential 
 Built by **Shah Ahmad Raza** · [GitHub](https://github.com/ahmad2techmaestro) · [LinkedIn](https://www.linkedin.com/in/shah-ahmad-raza-62a72722b)
 
 Released under the [MIT License](LICENSE).
+### Troubleshooting: "Weather isn't available" on a hosted backend
+
+Open-Meteo's free tier rate-limits (HTTP 429) the shared IPs of hosts like Render. WeatherX handles this in three layers:
+the browser fetches the data from the visitor's own IP and relays it to the server (cached per user for 30 min), a circuit
+breaker (`UPSTREAM_COOLDOWN_MS`, default 30 s) makes failures fast instead of slow, and setting `OPEN_METEO_API_KEY`
+(a paid Open-Meteo plan) removes the limit entirely. AI pages (Agent Center, Travel, Air Quality, Smart Alerts) use the same relay.

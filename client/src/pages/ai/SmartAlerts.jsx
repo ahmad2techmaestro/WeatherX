@@ -6,7 +6,7 @@ import PageHero from "../../components/ui/PageHero";
 import { EmptyState, Skeleton } from "../../components/ui/States";
 import { usePlaces } from "../../context/PlacesContext";
 import { useSettings } from "../../context/SettingsContext";
-import { errorMessage } from "../../lib/api";
+import { errorMessage, callWithRelay } from "../../lib/api";
 
 const ICON = { heatwave: Flame, rain: CloudRain, air: Wind, temperature_above: Thermometer, sudden_change: Zap, anomaly: TrendingUp, briefing: Sunrise };
 const STATUS = { triggered: ["Sent", "good"], quiet: ["All clear", "quiet"], skipped: ["Already sent today", "quiet"], error: ["Check failed", "bad"], "": ["Not checked yet", "quiet"] };
@@ -34,7 +34,7 @@ function Workflow({ w, tpl, onChange, onDelete }) {
   const runTest = async () => {
     setTest({ busy: true, result: null, error: "" });
     try {
-      const { data } = await axios.post(`/api/automation/workflows/${w.id}/test`, null, { timeout: 60000 });
+      const { data } = await callWithRelay(() => axios.post(`/api/automation/workflows/${w.id}/test`, null, { timeout: 60000 }));
       setTest({ busy: false, result: data.data, error: "" });
     } catch (e) {
       setTest({ busy: false, result: null, error: errorMessage(e, "The test couldn't run.") });

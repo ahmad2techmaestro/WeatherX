@@ -107,7 +107,7 @@ const answerFromAnalysis = (a, { place, unit, language }) => ({ text: explainRul
 const answer = (overview, { place, unit, question, language, yesterday: y }) => {
     const handlers = { rain, run, bike, wear, air, why, yesterday };
     const key = pick(question);
-    if (key) return { text: handlers[key](overview, place, unit, question, language, y), intent: key };
+    if (key && handlers[key]) return { text: handlers[key](overview, place, unit, question, language, y), intent: key };
     const b = briefingRules(overview, place, unit);
     const eng = answerRules(overview, place, unit, question);
     if (language === "hi") return { text: `${b.text} (विस्तृत हिंदी उत्तर के लिए Gemini कुंजी चालू करें; अभी सरल उत्तर अंग्रेज़ी में है।)`, intent: "briefing" };

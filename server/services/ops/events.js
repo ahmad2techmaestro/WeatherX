@@ -42,8 +42,12 @@ const flag = (name) => { const ctx = als.getStore(); if (ctx && !ctx.flags.inclu
 
 /** Express middleware: times the request and writes one event when the response finishes. */
 const track = (feature) => (req, res, next) => {
-    const ctx = { gemini: { calls: 0, ms: 0, errors: 0, promptTokens: 0, outputTokens: 0 }, flags: [] };
+    const ctx = { missing: [], user: req.user?.id ? String(req.user.id) : null, gemini: { calls: 0, ms: 0, errors: 0, promptTokens: 0, outputTokens: 0 }, flags: [] };
     const started = Date.now();
+    // Places whose weather could not be loaded are added to the JSON reply so the browser can fetch them itself
+    // (from the visitor's own IP) and ask again. See client/src/lib/api.js callWithRelay.
+    const json = res.json.bind(res);
+    res.json = (body) => json(ctx.missing.length && body && typeof body === "object" && !Array.isArray(body) ? { ...body, missing: ctx.missing } : body);
     res.on("finish", () => {
         if (!req.user?.id) return;
         push({
@@ -109,4 +113,19 @@ const rowsFor = async (user, days) => {
 
 const recent = (rows, limit = 15) => rows.slice(-limit).reverse().map((r) => ({ at: r.at, feature: r.feature, ms: r.ms, ok: r.ok, status: r.status, engine: r.engine, tokens: (r.promptTokens || 0) + (r.outputTokens || 0), flags: r.flags || [] }));
 
-module.exports = { track, recordGemini, flag, summarise, rowsFor, recent, useStore, __reset, push };
+/**
+ * Captures the current request's context so work started later from a library that loses async context
+ * (a graph runner, a queue) can still run inside it: `const inRequest = capture(); inRequest(() => work())`.
+ */
+const capture = () => { const store = als.getStore(); return (fn) => (store ? als.run(store, fn) : fn()); };
+
+/** Records a place whose weather could not be fetched during this request (max 5). */
+const noteMissing = (latitude, longitude) => {
+    const ctx = als.getStore();
+    if (ctx && ctx.missing.length < 5 && !ctx.missing.some((m) => m.latitude === latitude && m.longitude === longitude)) ctx.missing.push({ latitude, longitude });
+};
+
+/** Id of the signed-in user for the request being handled (null outside a tracked request). */
+const currentUserId = () => als.getStore()?.user || null;
+
+module.exports = { capture, noteMissing, currentUserId, track, recordGemini, flag, summarise, rowsFor, recent, useStore, __reset, push };

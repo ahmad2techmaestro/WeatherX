@@ -6,7 +6,7 @@ import PageHero from "../../components/ui/PageHero";
 import { Segmented } from "../../components/ui/States";
 import { usePlaces } from "../../context/PlacesContext";
 import { useSettings } from "../../context/SettingsContext";
-import { errorMessage } from "../../lib/api";
+import { errorMessage, callWithRelay } from "../../lib/api";
 import { tempLabel } from "../../lib/units";
 
 const NIGHTS = [1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: `${n}` }));
@@ -79,7 +79,7 @@ export default function Travel() {
     if (list !== dest) { setDest(list); setDraft(""); }
     setState({ busy: true, error: "", data: null });
     try {
-      const { data } = await axios.post("/api/travel/plan", { destinations: list, nights, startDate: start || undefined, unit: units.temperature, lat: place.latitude, lon: place.longitude, name: place.name }, { timeout: 45000 });
+      const { data } = await callWithRelay(() => axios.post("/api/travel/plan", { destinations: list, nights, startDate: start || undefined, unit: units.temperature, lat: place.latitude, lon: place.longitude, name: place.name }, { timeout: 45000 }));
       setState({ busy: false, error: "", data: data.data });
     } catch (err) {
       setState({ busy: false, error: errorMessage(err, "Couldn't build the plan. Please try again."), data: null });

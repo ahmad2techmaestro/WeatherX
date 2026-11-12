@@ -1,6 +1,8 @@
 const { TTLCache } = require("../lib/cache");
 const { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany } = require("../providers/openMeteo");
 const { buildOverview } = require("./overviewModel");
+const relayCache = require("./relayCache");
+const { currentUserId, noteMissing } = require("./ops/events");
 const { saveHistoricalWeather } = require("./historicalWeatherService");
 
 // `staleMs`: if Open-Meteo rate-limits or fails, keep serving the last good response for this long
@@ -39,7 +41,7 @@ const toUpstreamError = (error) => {
  * is optional — if that provider is down the overview still loads and carries a
  * `air_quality_unavailable` warning rather than failing the whole page.
  */
-const getOverview = async (latitude, longitude) => {
+const getOverview = async (latitude, longitude, { userId = currentUserId() } = {}) => {
     const lat = snap(latitude);
     const lon = snap(longitude);
     const key = `${lat},${lon}`;
@@ -49,11 +51,18 @@ const getOverview = async (latitude, longitude) => {
         airCache.wrap(key, () => fetchAirQuality(lat, lon)),
     ]);
 
-    if (forecast.status === "rejected") throw toUpstreamError(forecast.reason);
+    // The server's shared IP is often rate-limited. If this user's browser already fetched the data itself,
+    // use that rather than failing.
+    const relayed = forecast.status === "rejected" || air.status === "rejected" ? relayCache.get(userId, lat, lon) : undefined;
+
+    if (forecast.status === "rejected" && !relayed?.forecast) {
+        noteMissing(lat, lon);
+        throw toUpstreamError(forecast.reason);
+    }
 
     return buildOverview({
-        forecast: forecast.value,
-        air: air.status === "fulfilled" ? air.value : null,
+        forecast: forecast.status === "fulfilled" ? forecast.value : relayed.forecast,
+        air: air.status === "fulfilled" ? air.value : relayed?.air || null,
     });
 };
 

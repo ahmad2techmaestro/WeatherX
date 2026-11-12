@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Activity, CloudRain, Cpu, Flame, Sparkles, TrendingDown, TrendingUp, Wind } from "lucide-react";
 
-import { errorMessage, isCanceled } from "../../lib/api";
+import { errorMessage, isCanceled, callWithRelay } from "../../lib/api";
 import { clockLabel, dayMonth } from "../../lib/format";
 import { readJson, writeJson } from "../../lib/storage";
 
@@ -99,8 +99,7 @@ export default function PredictionPanel({ place, units }) {
   useEffect(() => {
     const ctl = new AbortController();
     setState((s) => ({ ...s, loading: true, error: "" }));
-    axios
-      .get("/api/prediction/analysis", { params: { lat: place.latitude, lon: place.longitude, name: place.name, unit, language: lang }, signal: ctl.signal, timeout: 40000 })
+    callWithRelay(() => axios.get("/api/prediction/analysis", { params: { lat: place.latitude, lon: place.longitude, name: place.name, unit, language: lang }, signal: ctl.signal, timeout: 40000 }))
       .then(({ data }) => setState({ loading: false, data: data.data, error: "" }))
       .catch((e) => !isCanceled(e) && setState((s) => ({ loading: false, data: s.data, error: errorMessage(e, "Couldn't analyse the forecast right now.") })));
     return () => ctl.abort();

@@ -3,7 +3,7 @@ const memory = require("../rag/memory");
 
 const realDeps = () => ({
     // Loaded lazily: the weather providers read their upstream URLs from the environment when first required.
-    getOverview: (lat, lon) => require("../forecastService").getOverview(lat, lon),
+    getOverview: (lat, lon, userId) => require("../forecastService").getOverview(lat, lon, { userId }),
     getAnalysis: (args) => require("../prediction/service").getAnalysis(args),
     isSensitive: async (userId) => (await memory.list(userId).catch(() => [])).some((m) => m.kind === "health"),
     runAgents: async ({ goal, wf, here }) => {

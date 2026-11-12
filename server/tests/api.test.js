@@ -668,3 +668,29 @@ test("prompt-injection: attempts are flagged, hostile saved notes never reach th
     const flags = (await getJson("/ai-ops/overview")).body.data.recent[0].flags;
     assert.ok(flags.includes("injection_attempt") && flags.includes("leak_blocked") && flags.includes("unsafe_note_dropped"), flags.join());
 });
+
+test("when the server is rate-limited, data relayed by the user's browser powers the AI routes (for that user only)", async () => {
+    const relayCache = require("../services/relayCache");
+    relayCache.clear();
+    const probe = `/air/analysis?lat=33.333&lon=44.444&name=Probe`;
+
+    process.env.MOCK_FAIL = "/v1/forecast";
+    const before = await get(probe);
+    assert.ok(before.status >= 500, "fails while upstream is down and nothing was relayed");
+
+    // The browser fetches Open-Meteo itself (URLs come from the failed overview call) and relays it with the place's coordinates.
+    const failed = await get("/weather/overview?lat=33.333&lon=44.444");
+    delete process.env.MOCK_FAIL;
+    const [forecast, air] = await Promise.all([fetch(failed.body.fallback.forecast).then((r) => r.json()), fetch(failed.body.fallback.air).then((r) => r.json())]);
+    process.env.MOCK_FAIL = "/v1/forecast";
+    const ok = await fetch(`${base}/weather/overview/relay`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ forecast, air, lat: 33.333, lon: 44.444 }) });
+    assert.equal(ok.status, 200);
+
+    const after = await get(probe);
+    delete process.env.MOCK_FAIL;
+    assert.equal(after.status, 200, JSON.stringify(after.body).slice(0, 200));
+
+    // Another user's request for the same place does not see it.
+    assert.equal(relayCache.get("someone-else", 33.333, 44.444), undefined);
+    relayCache.clear();
+});

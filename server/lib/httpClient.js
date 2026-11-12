@@ -17,6 +17,20 @@ const client = axios.create({
 // message rather than a bare gateway timeout.
 const DEADLINE_MS = Number(process.env.UPSTREAM_DEADLINE_MS) || 20000;
 
+// Circuit breaker: once a host has answered 429 even after our retries, stop sending it requests for a short
+// cooldown. Hammering a rate-limited shared IP only extends the block, and callers would otherwise each wait out the
+// full retry deadline (~20 s) just to fail. During the cooldown calls fail at once, so the app can use its stale cache
+// or the browser relay straight away.
+const cooldowns = new Map();
+const cooldownMs = () => (process.env.UPSTREAM_COOLDOWN_MS !== undefined ? Number(process.env.UPSTREAM_COOLDOWN_MS) : 30000);
+const hostOf = (url) => { try { return new URL(url).host; } catch { return ""; } };
+const resetBreaker = () => cooldowns.clear();
+
+const coolingDown = (url) => {
+    const until = cooldowns.get(hostOf(url));
+    return until && until > Date.now() ? until : 0;
+};
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isRetryable = (error) => {
@@ -45,6 +59,13 @@ const retryAfterMs = (error) => {
  * - Retrying stops once DEADLINE_MS would be exceeded.
  */
 const getJson = async (url, config = {}, { retries = 1, backoffMs = 350, rateLimitRetries = retries > 0 ? 3 : 0 } = {}) => {
+    if (coolingDown(url)) {
+        const error = new Error("Upstream is rate-limiting this server; waiting before trying again.");
+        error.isAxiosError = true;
+        error.response = { status: 429, data: { reason: "cooling down after rate limit" }, headers: {} };
+        throw error;
+    }
+
     const startedAt = Date.now();
     let failures = 0;
     let throttled = 0;
@@ -77,7 +98,17 @@ const getJson = async (url, config = {}, { retries = 1, backoffMs = 350, rateLim
         }
     }
 
+    if (lastError.response?.status === 429 && cooldownMs() > 0) cooldowns.set(hostOf(url), Date.now() + cooldownMs());
+
     throw lastError;
 };
 
-module.exports = { getJson, client };
+// Optional paid Open-Meteo plan: with OPEN_METEO_API_KEY the server uses the customer hosts and signs each call.
+// The key is added here, on the server only. It is never put into the URLs handed to the browser.
+client.interceptors.request.use((config) => {
+    const key = process.env.OPEN_METEO_API_KEY;
+    if (key && /\/\/customer-/.test(config.url || "")) config.params = { ...config.params, apikey: key };
+    return config;
+});
+
+module.exports = { getJson, client, resetBreaker };

@@ -43,14 +43,14 @@ async function fetchPublicJson(url, signal) {
  * Fallback for when the WeatherX server's shared IP is rate-limited by Open-Meteo: the server sends back the
  * upstream URLs, this device fetches them from its own IP, and the server turns the raw data into the usual overview.
  */
-async function overviewViaBrowser(fallback, { signal } = {}) {
+async function overviewViaBrowser(fallback, { signal, place } = {}) {
   const [forecast, air] = await Promise.allSettled([fetchPublicJson(fallback.forecast, signal), fetchPublicJson(fallback.air, signal)]);
 
   if (forecast.status === "rejected") throw forecast.reason;
 
   const { data } = await axios.post(
     "/api/weather/overview/relay",
-    { forecast: forecast.value, air: air.status === "fulfilled" ? air.value : null },
+    { forecast: forecast.value, air: air.status === "fulfilled" ? air.value : null, lat: place?.latitude, lon: place?.longitude },
     { signal, timeout: 20000 }
   );
 
@@ -72,7 +72,7 @@ export async function fetchOverview(place, { signal } = {}) {
     if (!fallback?.forecast || !fallback?.air || isCanceled(error)) throw error;
 
     try {
-      return await overviewViaBrowser(fallback, { signal });
+      return await overviewViaBrowser(fallback, { signal, place });
     } catch (fallbackError) {
       // Cancelled by the user: stay quiet. Anything else: show the server's original message.
       throw isCanceled(fallbackError) || fallbackError?.name === "AbortError" ? fallbackError : error;
@@ -85,4 +85,33 @@ export async function fetchMulti(places, { signal } = {}) {
   const { data } = await axios.get("/api/weather/multi", { params: { points }, signal, timeout: 25000 });
 
   return data.data;
+}
+
+/**
+ * Runs an AI request. If the server reports places whose weather it could not fetch (its shared IP is rate-limited),
+ * this device fetches them from its own IP, relays them to the server (kept for this user only), and asks once more.
+ * `request` must return an axios response promise.
+ */
+export async function callWithRelay(request, { signal } = {}) {
+  let response;
+  let failure;
+
+  try {
+    response = await request();
+  } catch (error) {
+    if (isCanceled(error)) throw error;
+    failure = error;
+  }
+
+  const missing = (response?.data?.missing || failure?.response?.data?.missing || []).slice(0, 5);
+
+  if (missing.length) {
+    const results = await Promise.allSettled(missing.map((m) => fetchOverview({ latitude: m.latitude, longitude: m.longitude, name: "" }, { signal })));
+
+    if (results.some((r) => r.status === "fulfilled")) return request();
+  }
+
+  if (failure) throw failure;
+
+  return response;
 }

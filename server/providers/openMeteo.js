@@ -1,15 +1,20 @@
 const { getJson, client } = require("../lib/httpClient");
 
 // Base URLs are overridable so tests and local development can point at a mock upstream.
-const FORECAST_URL =
-    process.env.OPEN_METEO_FORECAST_URL || "https://api.open-meteo.com/v1/forecast";
+// With OPEN_METEO_API_KEY (paid plan) the server calls the dedicated "customer-" hosts, which are not subject to the
+// shared free-tier limit that cloud IPs often hit. Explicit *_URL overrides (tests, mocks) always win.
+const paid = Boolean(process.env.OPEN_METEO_API_KEY);
+const host = (name) => `https://${paid ? "customer-" : ""}${name}.open-meteo.com`;
 
-const ARCHIVE_URL =
-    process.env.OPEN_METEO_ARCHIVE_URL || "https://archive-api.open-meteo.com/v1/archive";
+const FORECAST_URL = process.env.OPEN_METEO_FORECAST_URL || `${host("api")}/v1/forecast`;
 
-const AIR_QUALITY_URL =
-    process.env.OPEN_METEO_AIR_QUALITY_URL ||
-    "https://air-quality-api.open-meteo.com/v1/air-quality";
+const ARCHIVE_URL = process.env.OPEN_METEO_ARCHIVE_URL || `${host("archive-api")}/v1/archive`;
+
+const AIR_QUALITY_URL = process.env.OPEN_METEO_AIR_QUALITY_URL || `${host("air-quality-api")}/v1/air-quality`;
+
+// What the browser may call: always the free public hosts, never a keyed URL.
+const PUBLIC_FORECAST_URL = process.env.OPEN_METEO_FORECAST_URL || "https://api.open-meteo.com/v1/forecast";
+const PUBLIC_AIR_URL = process.env.OPEN_METEO_AIR_QUALITY_URL || "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 const CURRENT_VARS = [
     "temperature_2m",
@@ -107,8 +112,8 @@ const fetchAirQuality = (latitude, longitude) => getJson(AIR_QUALITY_URL, { para
  * JSON back through POST /weather/overview/relay.
  */
 const browserFallbackUrls = (latitude, longitude) => ({
-    forecast: client.getUri({ url: FORECAST_URL, params: { latitude, longitude, ...forecastParams() } }),
-    air: client.getUri({ url: AIR_QUALITY_URL, params: { latitude, longitude, ...airQualityParams() } }),
+    forecast: client.getUri({ url: PUBLIC_FORECAST_URL, params: { latitude, longitude, ...forecastParams() } }),
+    air: client.getUri({ url: PUBLIC_AIR_URL, params: { latitude, longitude, ...airQualityParams() } }),
 });
 
 /** Yesterday's observed-model values (reanalysis, not a station reading) for "compare with yesterday". */
