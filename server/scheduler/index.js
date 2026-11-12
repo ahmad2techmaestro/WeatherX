@@ -19,6 +19,10 @@ const {
     sendDailyDigests,
 } = require("../jobs/weatherWatchJob");
 
+const { runDueWorkflows } = require("../jobs/workflowJob");
+
+const WORKFLOW_SCHEDULE = process.env.WORKFLOW_CRON || "*/30 * * * *";
+
 const WEATHER_WATCH_SCHEDULE =
     process.env.WEATHER_WATCH_CRON || "*/20 * * * *";
 
@@ -69,6 +73,10 @@ const registerScheduledJobs = () => {
             schedule: WEATHER_WATCH_SCHEDULE,
             task: watchWeatherChanges,
         });
+    }
+
+    if (!registeredJobs.includes("automation-workflows")) {
+        registerJob({ name: "automation-workflows", schedule: WORKFLOW_SCHEDULE, task: runDueWorkflows });
     }
 
     if (!registeredJobs.includes("daily-digest")) {

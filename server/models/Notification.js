@@ -22,6 +22,7 @@ const notificationSchema = new mongoose.Schema(
                 "weather_alert",
                 "daily_forecast",
                 "weather_update",
+                "smart_alert",
             ],
             required: true,
         },
