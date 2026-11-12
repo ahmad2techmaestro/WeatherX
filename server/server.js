@@ -202,6 +202,9 @@ app.get("/health", (req, res) => {
         environment:
             process.env.NODE_ENV || "development",
         timestamp: new Date().toISOString(),
+        // Lets you confirm which build a host is actually running (Render sets RENDER_GIT_COMMIT).
+        build: (process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "").slice(0, 7) || undefined,
+        features: ["assistant", "prediction", "research", "agents", "automation", "ai-ops", "vision"],
     });
 });
 
