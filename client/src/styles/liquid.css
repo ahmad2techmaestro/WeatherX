@@ -1,0 +1,190 @@
+/* ───────────────────────── Liquid Glass ─────────────────────────
+   Loaded last. Re-skins every surface as translucent, blurred glass with a specular edge, over an ambient
+   colour field. Colours and layout come from the existing tokens, so each page keeps its own structure.
+   Fallbacks: no backdrop-filter support, "reduce transparency" and forced-colors all get solid surfaces. */
+
+:root,
+:root[data-theme="light"] {
+  --glass-fill: rgba(255, 255, 255, 0.56);
+  --glass-fill-2: rgba(255, 255, 255, 0.38);
+  --glass-fill-strong: rgba(255, 255, 255, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --glass-edge-dim: rgba(255, 255, 255, 0.35);
+  --glass-line: rgba(14, 24, 32, 0.09);
+  --glass-shadow: 0 1px 1px rgba(14, 24, 32, 0.04), 0 10px 30px -12px rgba(30, 50, 80, 0.25), 0 28px 60px -34px rgba(30, 50, 80, 0.3);
+  --glass-shadow-hover: 0 2px 2px rgba(14, 24, 32, 0.05), 0 18px 40px -14px rgba(30, 50, 80, 0.32), 0 36px 70px -34px rgba(30, 50, 80, 0.36);
+  --glass-blur: blur(22px) saturate(1.7);
+  --glass-blur-strong: blur(34px) saturate(1.9);
+  --orb-a: rgba(255, 190, 90, 0.5);
+  --orb-b: rgba(110, 170, 255, 0.5);
+  --orb-c: rgba(190, 150, 255, 0.4);
+  --orb-d: rgba(90, 210, 190, 0.34);
+  --bg-base: #e9eef5;
+  --bg-base-2: #f4f1ec;
+}
+
+:root[data-theme="dark"] {
+  --glass-fill: rgba(28, 40, 54, 0.52);
+  --glass-fill-2: rgba(40, 54, 72, 0.4);
+  --glass-fill-strong: rgba(24, 34, 46, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.22);
+  --glass-edge-dim: rgba(255, 255, 255, 0.07);
+  --glass-line: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 12px 34px -12px rgba(0, 0, 0, 0.6), 0 30px 64px -36px rgba(0, 0, 0, 0.7);
+  --glass-shadow-hover: 0 2px 2px rgba(0, 0, 0, 0.35), 0 20px 44px -14px rgba(0, 0, 0, 0.7), 0 38px 74px -36px rgba(0, 0, 0, 0.8);
+  --glass-blur: blur(24px) saturate(1.5) brightness(1.05);
+  --glass-blur-strong: blur(36px) saturate(1.6) brightness(1.05);
+  --orb-a: rgba(255, 160, 40, 0.3);
+  --orb-b: rgba(60, 120, 255, 0.34);
+  --orb-c: rgba(150, 90, 255, 0.3);
+  --orb-d: rgba(30, 190, 170, 0.22);
+  --bg-base: #070c14;
+  --bg-base-2: #0b1220;
+}
+
+/* Ambient colour field behind everything (fixed, so glass has something to refract while scrolling). */
+body {
+  background:
+    radial-gradient(60vmax 46vmax at 8% 4%, var(--orb-a), transparent 62%),
+    radial-gradient(56vmax 46vmax at 96% 10%, var(--orb-b), transparent 60%),
+    radial-gradient(58vmax 50vmax at 80% 96%, var(--orb-c), transparent 62%),
+    radial-gradient(50vmax 40vmax at 4% 90%, var(--orb-d), transparent 60%),
+    linear-gradient(160deg, var(--bg-base), var(--bg-base-2));
+  background-attachment: fixed;
+}
+
+/* ── Glass surfaces ───────────────────────────────────────────── */
+.card, .pnl, .kpi, .tile, .advisory, .cmp-card, .place-card, .state, .glance button, .locbadge, .map-status,
+.phero__meta li, .xcard__save, .dash__card, .sk__drop, .rs__form, .wxa__panel, .ai__tabs, .sa__seg,
+.popover, .search__panel, .mp__search .search__panel, .chart-tip, .hourly__nav, .tl__nav button,
+.watch__cities button, .rs__examples button, .wxa__chips button, .sa__tpls button, .tabs, .afield__control input,
+.search__field, .tp__field select, .tp__field input[type="number"], .tp__field input[type="date"], .sa__goal,
+.input, .tabbar, .header {
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-dim), inset 1px 0 0 var(--glass-edge-dim);
+}
+
+/* Only static boxes get positioned for the sheen layer (the header is sticky, the tab bar fixed). */
+.card, .pnl, .kpi, .tile { position: relative; }
+
+/* Large containers get the deeper blur and rounder corners. */
+.card, .pnl, .dash__card, .wxa__panel, .rs__form, .state, .cmp-card { border-radius: 24px; -webkit-backdrop-filter: var(--glass-blur-strong); backdrop-filter: var(--glass-blur-strong); }
+.kpi, .tile, .advisory, .place-card { border-radius: 20px; }
+
+/* Specular sheen: a faint diagonal light sweep across big glass. */
+.card::before, .pnl::before, .dash__card::before, .kpi::before, .tile::before, .wxa__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.1) 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+:root[data-theme="dark"] .card::before, :root[data-theme="dark"] .pnl::before, :root[data-theme="dark"] .dash__card::before,
+:root[data-theme="dark"] .kpi::before, :root[data-theme="dark"] .tile::before, :root[data-theme="dark"] .wxa__panel::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, 0.05) 100%);
+  mix-blend-mode: normal;
+}
+/* Keep content above the sheen. */
+.card > *, .pnl > *, .dash__card > *, .kpi > *, .tile > *, .wxa__panel > * { position: relative; z-index: 1; }
+.dash__card > .dash__go { position: absolute; z-index: 2; }
+
+/* Interactive lift */
+.dash__card, .glance button, .place-card, .cmp-card, .tile, .watch__cities button, .rs__examples button, .wxa__chips button, .sa__tpls button {
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+.dash__card:hover, .glance button:hover, .place-card:hover, .cmp-card:hover, .watch__cities button:hover, .rs__examples button:hover,
+.wxa__chips button:hover, .sa__tpls button:hover {
+  transform: translateY(-3px);
+  background: var(--glass-fill-strong);
+  box-shadow: var(--glass-shadow-hover), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-dim);
+}
+.dash__card:active, .glance button:active, .place-card:active { transform: translateY(-1px) scale(0.995); }
+
+/* ── Navigation ───────────────────────────────────────────────── */
+.header { border-radius: 0 0 26px 26px; border-top: 0; border-inline: 1px solid var(--glass-line); background: color-mix(in srgb, var(--glass-fill) 100%, transparent); }
+@media (min-width: 1300px) { .header { margin: 0 12px; border-radius: 0 0 28px 28px; } }
+.header__nav a { border-radius: 99px; transition: background 0.2s var(--ease), color 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.header__nav a:hover { background: var(--glass-fill-2); }
+.header__nav a.active { background: var(--glass-fill-strong); box-shadow: inset 0 1px 0 var(--glass-edge), 0 4px 14px -6px rgba(30, 50, 80, 0.35); border-bottom-color: transparent; }
+
+.ai__tabs { border-radius: 99px; padding: 5px; }
+.ai__tabs a { border-radius: 99px; transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.ai__tabs a.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 88%, #fff), var(--ink));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+}
+.sa__seg button.is-on, .wxa__lang button.is-on, .pred__lang button.is-on { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px -5px rgba(0, 0, 0, 0.4); }
+
+/* Mobile tab bar: floating glass capsule */
+@media (max-width: 720px) {
+  .tabbar {
+    left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+    width: auto; border-radius: 26px; border: 1px solid var(--glass-line);
+    background: var(--glass-fill); -webkit-backdrop-filter: var(--glass-blur-strong); backdrop-filter: var(--glass-blur-strong);
+  }
+  .tabbar a, .tabbar button { border-radius: 18px; }
+  .tabbar a.active, .tabbar .active { background: var(--glass-fill-strong); box-shadow: inset 0 1px 0 var(--glass-edge), 0 4px 12px -6px rgba(30, 50, 80, 0.4); }
+}
+
+/* ── Controls ─────────────────────────────────────────────────── */
+.btn { border-radius: 99px; transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease); }
+.btn--primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent));
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000 12%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 8px 22px -10px color-mix(in srgb, var(--accent) 90%, #000);
+}
+.btn--primary:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 26px -10px color-mix(in srgb, var(--accent) 95%, #000); }
+.btn--ghost, .btn--secondary {
+  background: var(--glass-fill-2); border: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-dim);
+}
+.btn--ghost:hover, .btn--secondary:hover { background: var(--glass-fill-strong); }
+.input, .search__field, .afield__control input, .tp__field select, .tp__field input, .sa__goal { border-radius: 16px; background: var(--glass-fill-2); box-shadow: inset 0 1px 2px rgba(14, 24, 32, 0.06), inset 0 1px 0 var(--glass-edge-dim); }
+.input:focus, .afield__control input:focus, .tp__field select:focus, .tp__field input:focus, .sa__goal:focus {
+  background: var(--glass-fill-strong); outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 1px 0 var(--glass-edge);
+}
+
+/* Floating assistant */
+.wxa__fab {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--ink) 80%, #6ea8ff), var(--ink));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 14px 32px -10px rgba(20, 40, 90, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.wxa__msg--assistant { background: var(--glass-fill-2); border: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 var(--glass-edge-dim); }
+
+/* Table / chart tooltips and dialogs need to stay legible over busy content */
+.popover, .search__panel, .chart-tip { background: var(--glass-fill-strong); -webkit-backdrop-filter: var(--glass-blur-strong); backdrop-filter: var(--glass-blur-strong); border-radius: 18px; }
+.recharts-tooltip-wrapper .recharts-default-tooltip { -webkit-backdrop-filter: var(--glass-blur-strong); backdrop-filter: var(--glass-blur-strong); background: var(--glass-fill-strong) !important; }
+
+/* Footer blends into the field */
+.footer { background: transparent; border-top-color: var(--glass-line); }
+
+/* ── Fallbacks ────────────────────────────────────────────────── */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root, :root[data-theme="light"] { --glass-fill: rgba(255, 255, 255, 0.94); --glass-fill-2: rgba(244, 247, 250, 0.96); --glass-fill-strong: #fff; }
+  :root[data-theme="dark"] { --glass-fill: rgba(22, 32, 44, 0.96); --glass-fill-2: rgba(30, 42, 56, 0.96); --glass-fill-strong: #18222e; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root[data-theme="light"] { --glass-fill: #fff; --glass-fill-2: #f1f4f7; --glass-fill-strong: #fff; --glass-blur: none; --glass-blur-strong: none; }
+  :root[data-theme="dark"] { --glass-fill: #121c26; --glass-fill-2: #19252f; --glass-fill-strong: #1a2733; --glass-blur: none; --glass-blur-strong: none; }
+  body { background: var(--bg); }
+  .card::before, .pnl::before, .dash__card::before, .kpi::before, .tile::before, .wxa__panel::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash__card:hover, .glance button:hover, .place-card:hover, .cmp-card:hover { transform: none; }
+}
+@media (forced-colors: active) {
+  .card, .pnl, .kpi, .tile, .dash__card, .header, .tabbar { background: Canvas; border-color: CanvasText; backdrop-filter: none; box-shadow: none; }
+  .card::before, .pnl::before, .dash__card::before, .kpi::before, .tile::before { display: none; }
+}
+/* Perf: blur is expensive on small phones; use the lighter blur there. */
+@media (max-width: 720px) {
+  :root, :root[data-theme="light"], :root[data-theme="dark"] { --glass-blur-strong: blur(22px) saturate(1.6); }
+}

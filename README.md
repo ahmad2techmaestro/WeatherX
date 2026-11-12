@@ -4,12 +4,15 @@
 
 # WeatherX
 
-**Precise weather, air quality and live maps for every town and village in India.**
+**AI-powered weather intelligence, air quality and live maps for every town and village in India.**
 
 ![Node](https://img.shields.io/badge/Node-22-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-AI-4285F4?logo=googlegemini&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-ML%20service-009688?logo=fastapi&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-agents-1c3c3c)
 ![License](https://img.shields.io/badge/license-MIT-0a1520)
 
 </div>
@@ -32,13 +35,28 @@ All figures come from real forecast and air-quality models. Estimates such as ai
 - **Locations:** saved places with live conditions.
 - **Alerts:** in-app, push, email, SMS and WhatsApp notifications.
 - **Accounts:** sign-in with secure sessions; every data route requires it.
+- **AI Dashboard:** one hub for everything AI: what is switched on, your automations and memory, and recent activity.
+- **AI Assistant:** ask in English or Hindi, by typing or voice. Answers are grounded in the real forecast, cite their sources and fall back to built-in rules without an API key.
+- **AI Agent Center:** a LangGraph supervisor routes your goal to specialist agents (weather, intelligence, air, travel, research) and shows its working.
+- **Weather Intelligence:** heatwave risk, anomalies and sudden changes against ten years of climate normals, with an optional ML cross-check.
+- **Air Quality Intelligence:** hour-by-hour NAQI, the cleanest window and sensitive-group advice.
+- **AI Travel Planner:** compare destinations and nights by weather, scored with reasons.
+- **Smart Alerts:** background automations (heatwave, rain, air, temperature, sudden change, anomaly, daily briefing), at most one notification per day each.
+- **Weather Research (RAG):** cited answers from a curated safety guide library, plus notes the assistant remembers.
+- **Sky Check:** photograph the sky and compare it with the forecast cloud cover (needs the optional ML service).
+- **AI Analytics:** speed, errors, tokens and safety-guard activity for your own usage. No question or answer text is stored.
+- **Liquid Glass interface:** translucent, blurred surfaces over an ambient colour field in light and dark, with solid fallbacks for reduced transparency and forced colours.
 
 ## Tech stack
 
 | Layer | Tools |
 | --- | --- |
-| Client | React 19, Vite, React Router, Recharts, Leaflet, Tailwind CSS v4 |
-| Server | Node 22, Express 4, Mongoose 9, JWT (access token and refresh cookie) |
+| Client | React 19, Vite, React Router, Recharts, Leaflet, Tailwind CSS v4, Liquid Glass CSS, Web Speech API |
+| Server | Node 22, Express 4, Mongoose 9, JWT (access token and refresh cookie), node-cron |
+| AI | Google Gemini (REST, tool calling, embeddings), LangGraph agents, RAG with vector search, Model Context Protocol server |
+| ML service | Python, FastAPI, scikit-learn (MinCovDet, IsolationForest), Pillow, NumPy |
+| Quality | node:test (150+ tests), pytest, offline evaluation suite, prompt-injection and leak guards |
+| Deploy | Docker, docker-compose, single Node service (API plus built client) |
 | Data | Open-Meteo, OpenStreetMap (Photon, Nominatim), OpenWeather map tiles |
 
 ## Getting started
@@ -144,6 +162,11 @@ NODE_ENV=production npm start          # start command
 ```
 
 Express serves both the API and the built client, so a single Node service is enough (Render, Railway, a VPS). Set the environment variables above on the host, with `NODE_ENV=production`. Health check: `/health`. Connect the GitHub repository to the host and every push to `main` redeploys automatically.
+
+### Troubleshooting
+
+- **"Route not found: GET /api/ai-ops/overview" (or `/api/agents`, `/api/air`, ...)**: the page is new but the API is old. Open `<your-api>/health`; a current build lists `features` (and `build`, the commit, on Render). If it does not, redeploy the backend: check that the latest deploy succeeded and, if needed, use "Clear build cache & deploy". When the frontend is on Netlify, `client/public/_redirects` forwards `/api/*` to the API host, so both must run the same commit.
+- **Gemini shows "Fallback" on `/ai`**: set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in the environment of the process that serves the API, then restart it.
 
 ## Data sources
 
