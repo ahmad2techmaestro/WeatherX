@@ -559,6 +559,18 @@ test("ML disabled: status says so, Sky Check explains, prediction has no ml sect
     assert.equal((await getJson("/prediction/analysis?lat=26.76&lon=83.37")).body.data.ml, null);
 });
 
+test("Sky Check works without the ML service: the browser sends its own numbers and the server adds the forecast comparison", async () => {
+    delete process.env.ML_SERVICE_URL;
+    const body = { label: "clear", confidence: 0.8, cloudCoverPercent: 10, note: "", features: { blueFraction: 0.7 } };
+    const send = (b) => raw("/vision/sky-local?lat=26.76&lon=83.37", JSON.stringify(b), "application/json");
+    const ok = await send(body);
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.labelText, "clear sky");
+    assert.ok(ok.body.data.comparison);
+    assert.equal((await send({ ...body, label: "bogus" })).status, 400);
+    assert.equal((await send({ ...body, cloudCoverPercent: 400 })).status, 400);
+});
+
 test("Sky Check validates uploads before anything reaches the ML service", async () => {
     process.env.ML_SERVICE_URL = "http://127.0.0.1:9"; // would fail if it were called
     assert.equal((await raw("/vision/sky", Buffer.alloc(0))).status, 400);
@@ -693,4 +705,17 @@ test("when the server is rate-limited, data relayed by the user's browser powers
     // Another user's request for the same place does not see it.
     assert.equal(relayCache.get("someone-else", 33.333, 44.444), undefined);
     relayCache.clear();
+});
+
+test("air analysis: when only air quality is rate-limited, the response asks the browser to fetch it", async () => {
+    process.env.MOCK_FAIL = "/v1/air-quality";
+    try {
+        const r = await getJson("/air/analysis?lat=14.42&lon=75.91");
+        assert.equal(r.status, 200);
+        assert.equal(r.body.data.analysis.available, false);
+        assert.equal(r.body.missing?.length, 1);
+        assert.match(r.body.missing[0].fallback.air, /air-quality/);
+    } finally {
+        delete process.env.MOCK_FAIL;
+    }
 });

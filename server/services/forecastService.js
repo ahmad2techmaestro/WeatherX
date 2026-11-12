@@ -1,5 +1,5 @@
 const { TTLCache } = require("../lib/cache");
-const { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany } = require("../providers/openMeteo");
+const { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany, browserFallbackUrls } = require("../providers/openMeteo");
 const { buildOverview } = require("./overviewModel");
 const relayCache = require("./relayCache");
 const { currentUserId, noteMissing } = require("./ops/events");
@@ -56,9 +56,12 @@ const getOverview = async (latitude, longitude, { userId = currentUserId() } = {
     const relayed = forecast.status === "rejected" || air.status === "rejected" ? relayCache.get(userId, lat, lon) : undefined;
 
     if (forecast.status === "rejected" && !relayed?.forecast) {
-        noteMissing(lat, lon);
+        noteMissing(lat, lon, browserFallbackUrls(lat, lon));
         throw toUpstreamError(forecast.reason);
     }
+
+    // Forecast is fine but air quality is not (rate-limited): ask the browser to fetch it so the page isn't left empty.
+    if (air.status === "rejected" && !relayed?.air) noteMissing(lat, lon, browserFallbackUrls(lat, lon));
 
     return buildOverview({
         forecast: forecast.status === "fulfilled" ? forecast.value : relayed.forecast,

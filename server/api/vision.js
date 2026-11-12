@@ -64,4 +64,29 @@ vision.post("/sky", limiter, express.raw({ type: ["image/jpeg", "image/png", "im
     }
 });
 
+// POST /api/vision/sky-local   JSON: the numbers the browser computed from the photo (the photo itself never leaves the device).
+const LABELS = Object.keys(LABEL);
+vision.post("/sky-local", limiter, express.json({ limit: "8kb" }), async (req, res, next) => {
+    try {
+        const b = req.body || {};
+        const cover = b.cloudCoverPercent;
+        const features = {};
+        for (const [k, v] of Object.entries(b.features && typeof b.features === "object" ? b.features : {}).slice(0, 12)) if (Number.isFinite(v)) features[String(k).slice(0, 30)] = v;
+        if (!LABELS.includes(b.label) || !(cover === null || (Number.isFinite(cover) && cover >= 0 && cover <= 100)) || !Number.isFinite(b.confidence)) {
+            return res.status(400).json({ success: false, message: "That analysis result isn't valid." });
+        }
+        const result = {
+            label: b.label, confidence: Math.min(1, Math.max(0, b.confidence)), cloudCoverPercent: cover, features,
+            note: typeof b.note === "string" ? b.note.slice(0, 200) : "",
+            method: "colour and texture statistics on the upper 60% of the photo, computed on your device",
+            caveat: "A heuristic estimate, not a trained model and not a weather observation.",
+        };
+        const point = parseCoordinates(req.query.lat, req.query.lon);
+        const comparison = point ? await getOverview(point.latitude, point.longitude).then((o) => compare(result, o)).catch(() => null) : null;
+        res.json({ success: true, data: { ...result, labelText: LABEL[result.label], comparison, description: null } });
+    } catch (e) {
+        next(e);
+    }
+});
+
 module.exports = { status, vision };

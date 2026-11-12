@@ -120,9 +120,9 @@ const recent = (rows, limit = 15) => rows.slice(-limit).reverse().map((r) => ({ 
 const capture = () => { const store = als.getStore(); return (fn) => (store ? als.run(store, fn) : fn()); };
 
 /** Records a place whose weather could not be fetched during this request (max 5). */
-const noteMissing = (latitude, longitude) => {
+const noteMissing = (latitude, longitude, fallback) => {
     const ctx = als.getStore();
-    if (ctx && ctx.missing.length < 5 && !ctx.missing.some((m) => m.latitude === latitude && m.longitude === longitude)) ctx.missing.push({ latitude, longitude });
+    if (ctx && ctx.missing.length < 5 && !ctx.missing.some((m) => m.latitude === latitude && m.longitude === longitude)) ctx.missing.push(fallback ? { latitude, longitude, fallback } : { latitude, longitude });
 };
 
 /** Id of the signed-in user for the request being handled (null outside a tracked request). */
