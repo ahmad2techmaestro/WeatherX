@@ -9,6 +9,7 @@
  *
  *   OPEN_METEO_FORECAST_URL=http://127.0.0.1:4010/v1/forecast \
  *   OPEN_METEO_AIR_QUALITY_URL=http://127.0.0.1:4010/v1/air-quality \
+ *   OPEN_METEO_ARCHIVE_URL=http://127.0.0.1:4010/v1/archive \
  *   OPEN_METEO_GEOCODING_URL=http://127.0.0.1:4010/v1/search \
  *   PHOTON_URL=http://127.0.0.1:4010/photon NOMINATIM_URL=http://127.0.0.1:4010/nominatim
  *
@@ -105,15 +106,16 @@ const hourModel = (lat, lon, hourUtc, scenario) => {
     };
 };
 
-const buildForecast = (lat, lon, nowSec = Math.floor(Date.now() / 1000)) => {
+const buildForecast = (lat, lon, nowSec = Math.floor(Date.now() / 1000), pastDays = 0, forecastDays = 14) => {
     const scenario = scenarioFor(lat, lon);
-    const startLocalMidnight = Math.floor((nowSec + IST) / 86400) * 86400 - IST;
+    const startLocalMidnight = Math.floor((nowSec + IST) / 86400) * 86400 - IST - pastDays * 86400;
+    const nDays = pastDays + forecastDays;
     const hourly = { time: [] };
     const keys = ["temperature_2m", "apparent_temperature", "relative_humidity_2m", "dew_point_2m", "precipitation_probability", "precipitation", "weather_code", "cloud_cover", "visibility", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "uv_index", "is_day", "pressure_msl"];
 
     keys.forEach((k) => { hourly[k] = []; });
 
-    for (let i = 0; i < 14 * 24; i += 1) {
+    for (let i = 0; i < nDays * 24; i += 1) {
         const t = startLocalMidnight + i * HOUR;
         const m = hourModel(lat, lon, t, scenario);
 
@@ -137,7 +139,7 @@ const buildForecast = (lat, lon, nowSec = Math.floor(Date.now() / 1000)) => {
 
     const daily = { time: [], weather_code: [], temperature_2m_max: [], temperature_2m_min: [], apparent_temperature_max: [], apparent_temperature_min: [], sunrise: [], sunset: [], daylight_duration: [], uv_index_max: [], precipitation_sum: [], precipitation_probability_max: [], precipitation_hours: [], wind_speed_10m_max: [], wind_gusts_10m_max: [], wind_direction_10m_dominant: [] };
 
-    for (let d = 0; d < 14; d += 1) {
+    for (let d = 0; d < nDays; d += 1) {
         const slice = (arr) => arr.slice(d * 24, d * 24 + 24);
         const temps = slice(hourly.temperature_2m);
         const feels = slice(hourly.apparent_temperature);
@@ -268,6 +270,29 @@ const nominatim = (lat, lon) => {
     return { address: { village: near.name, state_district: near.admin2, state: near.admin1, country: "India", country_code: "in" } };
 };
 
+/**
+ * Ten years of synthetic ERA5-like daily values: a repeatable wobble around the same level the mock forecast
+ * uses for a clear day (the mock forecast has no seasons, so the archive has none either).
+ */
+const buildArchive = (lat, lon, start, end) => {
+    const daily = { time: [], temperature_2m_max: [], temperature_2m_min: [], precipitation_sum: [] };
+    const base = 33 - Math.abs(lat - 20) * 0.45;
+
+    for (let t = Date.parse(`${start}T00:00:00Z`); t <= Date.parse(`${end}T00:00:00Z`); t += 86400000) {
+        const d = new Date(t);
+        const doy = Math.floor((t - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000);
+        const wobble = ((d.getUTCFullYear() * 31 + doy * 17) % 11) - 5;
+        const tmax = base + 6 + wobble * 0.4;
+
+        daily.time.push(d.toISOString().slice(0, 10));
+        daily.temperature_2m_max.push(Number(tmax.toFixed(1)));
+        daily.temperature_2m_min.push(Number((tmax - 11).toFixed(1)));
+        daily.precipitation_sum.push((d.getUTCFullYear() + doy) % 9 === 0 ? 6 : 0);
+    }
+
+    return { latitude: lat, longitude: lon, daily };
+};
+
 const handler = (req, res) => {
     const url = new URL(req.url, "http://localhost");
     const q = url.searchParams;
@@ -292,7 +317,19 @@ const handler = (req, res) => {
         return send(lats.map((lat, i) => buildAir(lat, lons[i])));
     }
 
-    if (url.pathname === "/v1/forecast") return send(buildForecast(Number(q.get("latitude")), Number(q.get("longitude"))));
+    if (url.pathname === "/v1/forecast") {
+        const past = Number(q.get("past_days") || 0);
+        const days = Number(q.get("forecast_days") || 14);
+        const body = buildForecast(Number(q.get("latitude")), Number(q.get("longitude")), undefined, past, days);
+
+        // Daily-only requests (recent history) get ISO dates, like the real API without timeformat=unixtime.
+        if (!q.get("hourly") && q.get("daily") && !q.get("timeformat")) {
+            return send({ ...body, hourly: undefined, daily: { time: body.daily.time.map((t) => new Date((t + IST) * 1000).toISOString().slice(0, 10)), temperature_2m_max: body.daily.temperature_2m_max, temperature_2m_min: body.daily.temperature_2m_min, precipitation_sum: body.daily.precipitation_sum } });
+        }
+
+        return send(body);
+    }
+    if (url.pathname === "/v1/archive") return send(buildArchive(Number(q.get("latitude")), Number(q.get("longitude")), q.get("start_date"), q.get("end_date")));
     if (url.pathname === "/v1/air-quality") return send(buildAir(Number(q.get("latitude")), Number(q.get("longitude"))));
     if (url.pathname === "/v1/search") return send(geocode(q.get("name") || "", q.get("countryCode")));
     if (url.pathname === "/photon/api/") return send(photon(q.get("q") || ""));
