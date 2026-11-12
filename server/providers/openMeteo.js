@@ -4,6 +4,9 @@ const { getJson, client } = require("../lib/httpClient");
 const FORECAST_URL =
     process.env.OPEN_METEO_FORECAST_URL || "https://api.open-meteo.com/v1/forecast";
 
+const ARCHIVE_URL =
+    process.env.OPEN_METEO_ARCHIVE_URL || "https://archive-api.open-meteo.com/v1/archive";
+
 const AIR_QUALITY_URL =
     process.env.OPEN_METEO_AIR_QUALITY_URL ||
     "https://air-quality-api.open-meteo.com/v1/air-quality";
@@ -108,6 +111,34 @@ const browserFallbackUrls = (latitude, longitude) => ({
     air: client.getUri({ url: AIR_QUALITY_URL, params: { latitude, longitude, ...airQualityParams() } }),
 });
 
+/** Yesterday's observed-model values (reanalysis, not a station reading) for "compare with yesterday". */
+const fetchYesterday = (latitude, longitude) =>
+    getJson(FORECAST_URL, {
+        params: {
+            latitude,
+            longitude,
+            timezone: "auto",
+            timeformat: "unixtime",
+            past_days: 1,
+            forecast_days: 1,
+            wind_speed_unit: "kmh",
+            temperature_unit: "celsius",
+            precipitation_unit: "mm",
+            hourly: "temperature_2m",
+            daily: "temperature_2m_max,temperature_2m_min,precipitation_sum",
+        },
+    });
+
+const DAILY_BASICS = "temperature_2m_max,temperature_2m_min,precipitation_sum";
+
+/** The last `pastDays` days of daily values (model reanalysis), ending today. ISO dates in the place's own time zone. */
+const fetchRecentDaily = (latitude, longitude, pastDays = 30) =>
+    getJson(FORECAST_URL, { params: { latitude, longitude, timezone: "auto", past_days: pastDays, forecast_days: 1, daily: DAILY_BASICS } });
+
+/** Daily history from ERA5 reanalysis, used for climate normals. */
+const fetchArchive = (latitude, longitude, startDate, endDate) =>
+    getJson(ARCHIVE_URL, { params: { latitude, longitude, timezone: "auto", start_date: startDate, end_date: endDate, daily: DAILY_BASICS } });
+
 const asList = (data) => (Array.isArray(data) ? data : [data]);
 
 /** Forecast for several coordinates in ONE request (keeps comparisons clear of upstream rate limits). */
@@ -143,4 +174,4 @@ const fetchCurrentMany = async (points) => {
     return Array.isArray(data) ? data : [data];
 };
 
-module.exports = { fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany, browserFallbackUrls };
+module.exports = { fetchRecentDaily, fetchArchive, fetchYesterday, fetchForecast, fetchAirQuality, fetchCurrentMany, fetchForecastMany, fetchAirQualityMany, browserFallbackUrls };

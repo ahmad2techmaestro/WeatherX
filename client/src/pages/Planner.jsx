@@ -4,6 +4,7 @@ import { CloudRain, Shirt, Sunrise, Sunset, Waves } from "lucide-react";
 import PageHero from "../components/ui/PageHero";
 import LocationBadge from "../components/ui/LocationBadge";
 import Lifestyle from "../components/weather/Lifestyle";
+import PredictionPanel from "../components/weather/PredictionPanel";
 import WeatherGate from "../components/weather/WeatherGate";
 import { Activities, BestDays, BodyConditions, RainTotals } from "../components/weather/Intelligence";
 import useOverview from "../hooks/useOverview";
@@ -113,6 +114,8 @@ export default function Planner() {
                 <small>{topActivity?.bestTime ? `Around ${clockLabel(topActivity.bestTime, tz)}` : "No strong window"}</small>
               </li>
             </ul>
+
+            <PredictionPanel place={place} units={units} />
 
             <section className="pnl" aria-labelledby="life-t">
               <h2 id="life-t" className="pnl__title">Lifestyle</h2>

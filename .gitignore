@@ -42,3 +42,10 @@ lerna-debug.log*
 # Package manager artifacts
 .pnp
 .pnp.js
+
+# Python (ml-service)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/

@@ -1,0 +1,10 @@
+node_modules
+client/node_modules
+client/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+ml-service
+**/__pycache__
+**/.pytest_cache

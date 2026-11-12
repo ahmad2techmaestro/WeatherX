@@ -144,7 +144,7 @@ app.use((req, res, next) => {
     // geolocation is needed for "use my location"; everything else stays off.
     res.setHeader(
         "Permissions-Policy",
-        "geolocation=(self), microphone=(), camera=()"
+        "geolocation=(self), microphone=(self), camera=()"
     );
 
     if (process.env.NODE_ENV === "production") {
@@ -329,6 +329,13 @@ const startServer = async () => {
         await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 15000 });
 
         console.log("MongoDB Connected...");
+
+        // Keep AI usage history across restarts (30 day TTL, numbers only).
+        const AiEvent = require("./models/AiEvent");
+        require("./services/ops/events").useStore({
+            insert: (row) => AiEvent.create(row),
+            list: async (user, since) => AiEvent.find({ user, at: { $gte: since } }).sort({ at: 1 }).limit(5000).lean(),
+        });
 
         app.listen(PORT, () => {
             console.log(

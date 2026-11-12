@@ -15,6 +15,13 @@ const notificationsRouter = require("./notifications");
 const pushRouter = require("./push");
 const owmMapRouter = require("./owmMap");
 const aiRouter = require("./ai");
+const assistantRouter = require("./assistant");
+const { track } = require("../services/ops/events");
+const predictionRouter = require("./prediction");
+const researchRouter = require("./research");
+const automationRouter = require("./automation");
+const { status: mlStatusRouter, vision: visionRouter } = require("./vision");
+const { agents: agentsRouter, air: airRouter, travelRouter } = require("./agents");
 
 const router = express.Router();
 
@@ -48,6 +55,17 @@ router.use(
 
 router.use("/notifications", notificationsRouter);
 router.use("/push", pushRouter);
-router.use("/ai", authenticate, aiRouter);
+router.use("/ai", authenticate, track("ai"), aiRouter);
+router.use("/assistant", authenticate, track("assistant"), assistantRouter);
+router.use("/prediction", authenticate, track("prediction"), predictionRouter);
+router.use("/research", authenticate, track("research"), researchRouter);
+router.use("/memory", authenticate, researchRouter.memoryRouter);
+router.use("/agents", authenticate, track("agents"), agentsRouter);
+router.use("/automation", authenticate, track("automation"), automationRouter);
+router.use("/ml", authenticate, mlStatusRouter);
+router.use("/vision", authenticate, track("vision"), visionRouter);
+router.use("/air", authenticate, track("air"), airRouter);
+router.use("/ai-ops", authenticate, require("./aiops"));
+router.use("/travel", authenticate, track("travel"), travelRouter);
 
 module.exports = router;
