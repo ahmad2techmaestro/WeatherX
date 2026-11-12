@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
-import { CloudSun, Columns3, Heart, Map as MapIcon, Moon, Settings as SettingsIcon, Sun, CalendarDays, Compass } from "lucide-react";
+import { CloudSun, Columns3, Heart, Map as MapIcon, Moon, Settings as SettingsIcon, Sun, CalendarDays, Compass, Sparkles } from "lucide-react";
 
 import Logo from "../ui/Logo";
 import { BrandIcon, HeartIcon } from "../ui/SocialIcons";
@@ -7,6 +7,7 @@ import { AUTHOR } from "../../lib/author";
 import { Segmented } from "../ui/States";
 import SearchBox from "./SearchBox";
 import AccountMenu from "./AccountMenu";
+import AssistantChat from "../weather/AssistantChat";
 import { useSettings } from "../../context/SettingsContext";
 import { TEMP_UNITS } from "../../lib/units";
 
@@ -14,6 +15,7 @@ const NAV = [
   { to: "/", label: "Today", icon: CloudSun, end: true },
   { to: "/forecast", label: "Outlook", icon: CalendarDays },
   { to: "/planner", label: "Insights", icon: Compass },
+  { to: "/ai", label: "AI", icon: Sparkles },
   { to: "/map", label: "Atlas", icon: MapIcon },
   { to: "/compare", label: "Benchmark", icon: Columns3 },
   { to: "/places", label: "Locations", icon: Heart },
@@ -91,6 +93,8 @@ export default function AppShell() {
           </div>
         </div>
       </footer>
+
+      <AssistantChat />
 
       <nav className="tabbar" aria-label="Primary">
         {NAV.map(({ to, label, icon: Icon, end }) => (

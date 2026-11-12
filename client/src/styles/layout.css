@@ -263,7 +263,7 @@
     inset: auto 0 0 0;
     z-index: 55;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: color-mix(in srgb, var(--bg-raised) 94%, transparent);
@@ -277,8 +277,12 @@
     align-content: center;
     gap: 2px;
     color: var(--ink-3);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .tabbar a.active {

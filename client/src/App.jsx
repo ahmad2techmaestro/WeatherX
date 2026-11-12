@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import AuthLayout from "./components/auth/AuthLayout";
 import AppShell from "./components/layout/AppShell";
@@ -9,6 +9,15 @@ import Home from "./pages/Home";
 
 const Forecast = lazy(() => import("./pages/Forecast"));
 const Planner = lazy(() => import("./pages/Planner"));
+const AiLayout = lazy(() => import("./pages/ai/AiLayout"));
+const AgentCenter = lazy(() => import("./pages/ai/AgentCenter"));
+const Travel = lazy(() => import("./pages/ai/Travel"));
+const Air = lazy(() => import("./pages/ai/Air"));
+const SmartAlerts = lazy(() => import("./pages/ai/SmartAlerts"));
+const Sky = lazy(() => import("./pages/ai/Sky"));
+const Research = lazy(() => import("./pages/ai/Research"));
+const Dashboard = lazy(() => import("./pages/ai/Dashboard"));
+const AiAnalytics = lazy(() => import("./pages/ai/Analytics"));
 const MapPage = lazy(() => import("./pages/MapPage"));
 const Compare = lazy(() => import("./pages/Compare"));
 const Places = lazy(() => import("./pages/Places"));
@@ -34,6 +43,17 @@ export default function App() {
               <Route index element={<Home />} />
               <Route path="forecast" element={<Forecast />} />
               <Route path="planner" element={<Planner />} />
+              <Route path="ai" element={<AiLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="analytics" element={<AiAnalytics />} />
+                <Route path="agents" element={<AgentCenter />} />
+                <Route path="travel" element={<Travel />} />
+                <Route path="air" element={<Air />} />
+                <Route path="alerts" element={<SmartAlerts />} />
+                <Route path="sky" element={<Sky />} />
+                <Route path="research" element={<Research />} />
+              </Route>
+              <Route path="research" element={<Navigate to="/ai/research" replace />} />
               <Route path="map" element={<MapPage />} />
               <Route path="compare" element={<Compare />} />
               <Route path="places" element={<Places />} />

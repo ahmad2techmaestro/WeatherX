@@ -19,6 +19,7 @@ import "./styles/map.css";
 import "./styles/auth.css";
 import "./styles/pages2.css";
 import "./styles/today.css";
+import "./styles/assistant.css";
 
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext";
