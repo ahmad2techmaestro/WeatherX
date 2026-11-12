@@ -61,17 +61,20 @@ const synthesize = async ({ goal, lang, memories, plan, outputs }) => {
  * @param {{goal:string, unit:'celsius'|'fahrenheit', language:'auto'|'en'|'hi', memories?:object[], deps:object}} p
  * @returns {{answer, engine, plan, steps, ms}}
  */
+const ops = require("../ops/events");
+
 const run = async ({ goal: rawGoal, unit = "celsius", language = "auto", memories = [], deps }) => {
     const goal = cleanText(rawGoal, 300);
     if (goal.length < 3) throw Object.assign(new Error("Describe your goal in at least 3 characters."), { status: 400 });
     const lang = detectLanguage(goal, language === "auto" ? undefined : language);
     const t0 = Date.now();
+    const inRequest = ops.capture(); // LangGraph does not carry our request context into its nodes
 
     const agentNode = (key) => async (state) => {
         const started = Date.now();
         const ctx = { goal, unit, lang, memories, deps, places: state.plan.places || [], nights: state.plan.nights, when: state.plan.when };
         try {
-            const out = await withTimeout(impl[key](ctx), AGENT_TIMEOUT_MS, AGENTS[key].name);
+            const out = await withTimeout(inRequest(() => impl[key](ctx)), AGENT_TIMEOUT_MS, AGENTS[key].name);
             return { outputs: { [key]: { ok: true, summary: out.summary, data: out.data } }, trace: [{ agent: key, name: AGENTS[key].name, status: "ok", ms: Date.now() - started, summary: out.summary, data: out.data }] };
         } catch (e) {
             const error = e.userMessage || "Something went wrong while fetching data.";

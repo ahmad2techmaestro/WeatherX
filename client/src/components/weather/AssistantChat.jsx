@@ -5,7 +5,7 @@ import { ArrowUp, Mic, MessageCircle, RotateCcw, Sparkles, Volume2, VolumeX, X }
 
 import { usePlaces } from "../../context/PlacesContext";
 import { useSettings } from "../../context/SettingsContext";
-import { errorMessage } from "../../lib/api";
+import { errorMessage, callWithRelay } from "../../lib/api";
 import { readJson, writeJson } from "../../lib/storage";
 
 const KEY = "wx.assistant.v1";
@@ -76,10 +76,12 @@ export default function AssistantChat() {
     abort.current = new AbortController();
 
     try {
-      const { data } = await axios.post(
-        "/api/assistant/chat",
-        { messages: next.slice(-8).map(({ role, text: t }) => ({ role, text: t })), lat: place.latitude, lon: place.longitude, name: place.name, unit: units.temperature, language: lang },
-        { signal: abort.current.signal, timeout: 40000 }
+      const { data } = await callWithRelay(() =>
+        axios.post(
+          "/api/assistant/chat",
+          { messages: next.slice(-8).map(({ role, text: t }) => ({ role, text: t })), lat: place.latitude, lon: place.longitude, name: place.name, unit: units.temperature, language: lang },
+          { signal: abort.current.signal, timeout: 40000 }
+        )
       );
       if (speak && canSpeak) {
         window.speechSynthesis.cancel();

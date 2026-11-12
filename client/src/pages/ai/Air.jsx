@@ -6,7 +6,7 @@ import { HeartPulse, ShieldCheck, TrendingDown, TrendingUp, Minus, Wind } from "
 import PageHero from "../../components/ui/PageHero";
 import { ErrorState, Skeleton } from "../../components/ui/States";
 import { usePlaces } from "../../context/PlacesContext";
-import { errorMessage } from "../../lib/api";
+import { errorMessage, callWithRelay } from "../../lib/api";
 
 const AXIS = { fontSize: 12, fill: "var(--ink-3)" };
 const TIP = { background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: 12 };
@@ -22,7 +22,7 @@ export default function Air() {
   useEffect(() => {
     const c = new AbortController();
     setS((x) => ({ ...x, loading: true, error: "" }));
-    axios.get("/api/air/analysis", { params: { lat: place.latitude, lon: place.longitude, name: place.name }, signal: c.signal, timeout: 25000 })
+    callWithRelay(() => axios.get("/api/air/analysis", { params: { lat: place.latitude, lon: place.longitude, name: place.name }, signal: c.signal, timeout: 25000 }))
       .then((r) => setS({ loading: false, error: "", data: r.data.data }))
       .catch((e) => !axios.isCancel(e) && setS({ loading: false, error: errorMessage(e, "Couldn't load air quality."), data: null }));
     return () => c.abort();

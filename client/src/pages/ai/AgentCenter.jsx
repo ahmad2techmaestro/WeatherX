@@ -5,7 +5,7 @@ import { AlertTriangle, Bot, CheckCircle2, Clock, Network, Send, Sparkles } from
 import PageHero from "../../components/ui/PageHero";
 import { usePlaces } from "../../context/PlacesContext";
 import { useSettings } from "../../context/SettingsContext";
-import { errorMessage } from "../../lib/api";
+import { errorMessage, callWithRelay } from "../../lib/api";
 
 const EXAMPLES = [
   "Is the air safe for a run, and will it rain later?",
@@ -58,7 +58,7 @@ export default function AgentCenter() {
     abort.current = new AbortController();
     setState({ busy: true, error: "", run: null });
     try {
-      const { data } = await axios.post("/api/agents/run", { goal: g, lat: place.latitude, lon: place.longitude, name: place.name, unit: units.temperature }, { signal: abort.current.signal, timeout: 60000 });
+      const { data } = await callWithRelay(() => axios.post("/api/agents/run", { goal: g, lat: place.latitude, lon: place.longitude, name: place.name, unit: units.temperature }, { signal: abort.current.signal, timeout: 60000 }));
       setState({ busy: false, error: "", run: data.data });
       load();
     } catch (e) {

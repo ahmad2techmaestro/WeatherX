@@ -97,3 +97,22 @@ test("TTLCache never serves data older than the stale window, and a failed key w
     await assert.rejects(() => cache.wrap("k", async () => { throw new Error("late"); }), /late/);
     await assert.rejects(() => cache.wrap("never-seen", async () => { throw new Error("none"); }), /none/);
 });
+
+test("circuit breaker: after a 429 that outlasts the retries the host is not called again during the cooldown", async () => {
+    const { getJson, resetBreaker } = require("../lib/httpClient");
+    resetBreaker();
+    process.env.UPSTREAM_COOLDOWN_MS = "60000";
+    const { server, calls, url } = await startScripted([429]);
+    try {
+        await assert.rejects(() => getJson(url, {}, { rateLimitRetries: 0 }), (e) => e.response?.status === 429);
+        const used = calls.count;
+        const started = Date.now();
+        await assert.rejects(() => getJson(url, {}), (e) => e.response?.status === 429 && e.isAxiosError);
+        assert.equal(calls.count, used, "no further upstream calls while cooling down");
+        assert.ok(Date.now() - started < 100, "fails immediately");
+        resetBreaker();
+    } finally {
+        delete process.env.UPSTREAM_COOLDOWN_MS;
+        server.close();
+    }
+});

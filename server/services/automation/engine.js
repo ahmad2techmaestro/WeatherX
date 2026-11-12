@@ -12,7 +12,7 @@ const { evaluate, TEMPLATE, NEEDS_ANALYSIS, localDate, localHour } = require("./
  */
 const runWorkflow = async (wf, deps, { dryRun = false, nowSec = Math.floor(Date.now() / 1000) } = {}) => {
     try {
-        const overview = await deps.getOverview(wf.place.latitude, wf.place.longitude);
+        const overview = await deps.getOverview(wf.place.latitude, wf.place.longitude, wf.user && String(wf.user));
         const date = localDate(overview, nowSec);
         if (!dryRun && wf.lastTriggeredDate === date) return { status: "skipped", message: "Already notified today.", date };
 
