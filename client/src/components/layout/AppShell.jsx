@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, Link } from "react-router-dom";
 import { CloudSun, Columns3, Heart, Map as MapIcon, Moon, Settings as SettingsIcon, Sun, CalendarDays, Compass, Sparkles } from "lucide-react";
 
@@ -25,6 +26,27 @@ const NAV = [
 export default function AppShell() {
   const { resolvedTheme, toggleTheme, units, setTemperature } = useSettings();
   const phone = useMedia("(max-width: 720px)");
+  const [hideHeader, setHideHeader] = useState(false);
+
+  // Phones: the header slides away while reading (scroll down) and returns as soon as you scroll up.
+  useEffect(() => {
+    if (!phone) return undefined;
+    let last = window.scrollY;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const searching = document.querySelector(".header .search");
+        if (y < 80 || searching) setHideHeader(false);
+        else if (y - last > 8) setHideHeader(true);
+        else if (last - y > 8) setHideHeader(false);
+        last = y;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); setHideHeader(false); };
+  }, [phone]);
 
   return (
     <div className="shell">
@@ -32,7 +54,7 @@ export default function AppShell() {
         Skip to content
       </a>
 
-      <header className="header">
+      <header className={`header${hideHeader ? " header--hidden" : ""}`}>
         <div className="header__inner">
           <Link to="/" className="header__brand" aria-label="WeatherX home">
             <Logo />
