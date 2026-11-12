@@ -106,7 +106,9 @@ export async function callWithRelay(request, { signal } = {}) {
   const missing = (response?.data?.missing || failure?.response?.data?.missing || []).slice(0, 5);
 
   if (missing.length) {
-    const results = await Promise.allSettled(missing.map((m) => fetchOverview({ latitude: m.latitude, longitude: m.longitude, name: "" }, { signal })));
+    const results = await Promise.allSettled(missing.map((m) =>
+        m.fallback ? overviewViaBrowser(m.fallback, { signal, place: m }) : fetchOverview({ latitude: m.latitude, longitude: m.longitude, name: "" }, { signal })
+      ));
 
     if (results.some((r) => r.status === "fulfilled")) return request();
   }

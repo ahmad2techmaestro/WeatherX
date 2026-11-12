@@ -21,6 +21,7 @@ import "./styles/pages2.css";
 import "./styles/today.css";
 import "./styles/assistant.css";
 import "./styles/liquid.css";
+import "./styles/mobile.css";
 
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext";

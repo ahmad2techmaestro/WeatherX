@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Camera, CloudSun, ImageUp, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { Camera, CloudSun, ImageUp, ShieldCheck, Sparkles } from "lucide-react";
 
 import PageHero from "../../components/ui/PageHero";
 import { usePlaces } from "../../context/PlacesContext";
-import { errorMessage } from "../../lib/api";
+import { callWithRelay, errorMessage } from "../../lib/api";
+import { classifySky } from "../../lib/skyCv";
 
 const MAX_SIDE = 1280;
 
@@ -35,6 +36,7 @@ export default function Sky() {
   const [describe, setDescribe] = useState(false);
   const [state, setState] = useState({ busy: false, error: "", data: null });
   const input = useRef(null);
+  const offline = Boolean(ml && !ml.healthy);
 
   useEffect(() => {
     document.title = "Sky Check — WeatherX";
@@ -54,6 +56,13 @@ export default function Sky() {
     if (!file || state.busy) return;
     setState({ busy: true, error: "", data: null });
     try {
+      if (offline) {
+        // No ML service: analyse on this device and send only the numbers for the forecast comparison.
+        const local = await classifySky(file);
+        const { data } = await callWithRelay(() => axios.post("/api/vision/sky-local", local, { params: { lat: place.latitude, lon: place.longitude }, timeout: 25000 }));
+        setState({ busy: false, error: "", data: data.data });
+        return;
+      }
       const blob = await shrink(file);
       const { data } = await axios.post("/api/vision/sky", blob, { params: { lat: place.latitude, lon: place.longitude, describe: describe ? 1 : 0 }, headers: { "Content-Type": blob.type || "image/jpeg" }, timeout: 60000, transformRequest: [(d) => d] });
       setState({ busy: false, error: "", data: data.data });
@@ -63,7 +72,6 @@ export default function Sky() {
   };
 
   const d = state.data;
-  const offline = ml && !ml.healthy;
 
   return (
     <>
@@ -71,8 +79,8 @@ export default function Sky() {
 
       {offline && (
         <section className="pnl sk__off" role="status">
-          <h2 className="pnl__title"><TriangleAlert size={18} aria-hidden /> The ML service isn't running</h2>
-          <p className="muted">{ml.enabled ? "WeatherX can't reach the Python ML service right now." : "Sky Check uses the optional Python ML service (ML_SERVICE_URL is not set)."} Start it with <code>npm run ml</code> and set <code>ML_SERVICE_URL=http://127.0.0.1:8001</code> in <code>server/.env</code>. Everything else in the app works without it.</p>
+          <h2 className="pnl__title"><ShieldCheck size={18} aria-hidden /> Private on-device analysis</h2>
+          <p className="muted">Your photo is analysed right here in your browser and never uploaded. Only the cloud-cover numbers are sent to compare with the forecast.</p>
         </section>
       )}
 
@@ -86,8 +94,8 @@ export default function Sky() {
         </div>
         <div className="sk__row">
           {preview && <button type="button" className="btn" onClick={() => input.current?.click()}>Change photo</button>}
-          <button type="button" className="btn btn--primary" onClick={analyse} disabled={!file || state.busy || offline}>{state.busy ? "Analysing…" : "Analyse sky"}</button>
-          <label className="sk__check"><input type="checkbox" checked={describe} onChange={(e) => setDescribe(e.target.checked)} /> Also ask Gemini to describe it <small>(sends the photo to Google)</small></label>
+          <button type="button" className="btn btn--primary" onClick={analyse} disabled={!file || state.busy}>{state.busy ? "Analysing…" : "Analyse sky"}</button>
+          {!offline && <label className="sk__check"><input type="checkbox" checked={describe} onChange={(e) => setDescribe(e.target.checked)} /> Also ask Gemini to describe it <small>(sends the photo to Google)</small></label>}
         </div>
         {state.error && <p className="rs__error" role="alert">{state.error}</p>}
       </section>

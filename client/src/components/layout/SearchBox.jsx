@@ -30,6 +30,7 @@ export default function SearchBox({ variant = "header", onPick, onSelect, placeh
   const [error, setError] = useState("");
   const [active, setActive] = useState(-1);
   const [expanded, setExpanded] = useState(!collapsible);
+  useEffect(() => setExpanded(!collapsible), [collapsible]);
 
   const rootRef = useRef(null);
   const inputRef = useRef(null);

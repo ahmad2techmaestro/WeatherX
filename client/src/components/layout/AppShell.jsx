@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
+import { NavLink, Outlet, Link } from "react-router-dom";
 import { CloudSun, Columns3, Heart, Map as MapIcon, Moon, Settings as SettingsIcon, Sun, CalendarDays, Compass, Sparkles } from "lucide-react";
 
 import Logo from "../ui/Logo";
@@ -8,6 +8,7 @@ import { Segmented } from "../ui/States";
 import SearchBox from "./SearchBox";
 import AccountMenu from "./AccountMenu";
 import AssistantChat from "../weather/AssistantChat";
+import useMedia from "../../hooks/useMedia";
 import { useSettings } from "../../context/SettingsContext";
 import { TEMP_UNITS } from "../../lib/units";
 
@@ -23,7 +24,7 @@ const NAV = [
 
 export default function AppShell() {
   const { resolvedTheme, toggleTheme, units, setTemperature } = useSettings();
-  const { pathname } = useLocation();
+  const phone = useMedia("(max-width: 720px)");
 
   return (
     <div className="shell">
@@ -46,7 +47,7 @@ export default function AppShell() {
           </nav>
 
           <div className="header__search">
-            <SearchBox variant="header" />
+            <SearchBox variant="header" collapsible={phone} autoFocus={false} />
           </div>
 
           <div className="header__actions">
@@ -98,8 +99,8 @@ export default function AppShell() {
 
       <nav className="tabbar" aria-label="Primary">
         {NAV.map(({ to, label, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end}>
-            <Icon size={22} aria-hidden="true" />
+          <NavLink key={to} to={to} end={end} aria-label={label}>
+            <Icon size={21} aria-hidden="true" />
             <span>{label}</span>
           </NavLink>
         ))}
